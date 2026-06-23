@@ -209,34 +209,3 @@ app.post('/api/pi/complete', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`Foot Quiz Pi backend lancé sur le port ${PORT}`);
 });
-  const today = todayString();
-  res.json({
-    points: user.points,
-    quizDoneToday: user.lastQuizDate === today,
-    wheelDoneToday: user.lastWheelDate === today
-  });
-});
-
-// Classement (top 20)
-app.get('/api/leaderboard', (req, res) => {
-  const leaderboard = Object.entries(users)
-    .map(([username, data]) => ({ username, points: data.points }))
-    .sort((a, b) => b.points - a.points)
-    .slice(0, 20);
-  res.json(leaderboard);
-});
-
-// ===== PI NETWORK - Authentification (placeholder à compléter) =====
-// Documentation: https://github.com/pi-apps/pi-platform-docs
-app.post('/api/pi/verify', async (req, res) => {
-  // Ici tu vérifieras le token Pi reçu du frontend avec l'API Pi officielle.
-  // À compléter avec ta clé API Pi quand tu seras prêt pour les paiements.
-  const { username } = req.body;
-  if (!username) return res.status(400).json({ error: 'username requis' });
-  getUser(username); // crée l'utilisateur s'il n'existe pas
-  res.json({ verified: true, username });
-});
-
-app.listen(PORT, () => {
-  console.log(`Foot Quiz Pi backend lancé sur le port ${PORT}`);
-});
