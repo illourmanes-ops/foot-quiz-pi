@@ -145,6 +145,87 @@ app.get('/api/leaderboard', (req, res) => {
   res.json(leaderboard);
 });
 
+// ===== PI NETWORK - Authentification =====
+// Documentation: https://github.com/pi-apps/pi-platform-docs
+const PI_API_KEY = process.env.PI_API_KEY;
+const PI_API_BASE = "https://api.minepi.com/v2";
+
+app.post('/api/pi/verify', async (req, res) => {
+  const { username, accessToken } = req.body;
+  if (!username) return res.status(400).json({ error: 'username requis' });
+
+  if (accessToken && PI_API_KEY) {
+    try {
+      const verifyRes = await fetch(`${PI_API_BASE}/me`, {
+        headers: { Authorization: `Bearer ${accessToken}` }
+      });
+      if (!verifyRes.ok) {
+        return res.status(401).json({ error: 'Token Pi invalide' });
+      }
+      const piUser = await verifyRes.json();
+      if (piUser.username !== username) {
+        return res.status(401).json({ error: 'Nom d\'utilisateur ne correspond pas au token' });
+      }
+    } catch (err) {
+      console.error('Erreur vérification Pi:', err.message);
+    }
+  }
+
+  getUser(username);
+  res.json({ verified: true, username });
+});
+
+app.post('/api/pi/approve', async (req, res) => {
+  const { paymentId } = req.body;
+  if (!paymentId || !PI_API_KEY) return res.status(400).json({ error: 'paymentId requis' });
+  try {
+    const r = await fetch(`${PI_API_BASE}/payments/${paymentId}/approve`, {
+      method: 'POST',
+      headers: { Authorization: `Key ${PI_API_KEY}` }
+    });
+    const data = await r.json();
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/pi/complete', async (req, res) => {
+  const { paymentId, txid } = req.body;
+  if (!paymentId || !txid || !PI_API_KEY) return res.status(400).json({ error: 'paymentId et txid requis' });
+  try {
+    const r = await fetch(`${PI_API_BASE}/payments/${paymentId}/complete`, {
+      method: 'POST',
+      headers: { Authorization: `Key ${PI_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ txid })
+    });
+    const data = await r.json();
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.listen(PORT, () => {
+  console.log(`Foot Quiz Pi backend lancé sur le port ${PORT}`);
+});
+  const today = todayString();
+  res.json({
+    points: user.points,
+    quizDoneToday: user.lastQuizDate === today,
+    wheelDoneToday: user.lastWheelDate === today
+  });
+});
+
+// Classement (top 20)
+app.get('/api/leaderboard', (req, res) => {
+  const leaderboard = Object.entries(users)
+    .map(([username, data]) => ({ username, points: data.points }))
+    .sort((a, b) => b.points - a.points)
+    .slice(0, 20);
+  res.json(leaderboard);
+});
+
 // ===== PI NETWORK - Authentification (placeholder à compléter) =====
 // Documentation: https://github.com/pi-apps/pi-platform-docs
 app.post('/api/pi/verify', async (req, res) => {
