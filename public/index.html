@@ -214,6 +214,11 @@ let currentUsername = null;
 let currentQuiz = [];
 let selectedAnswers = [];
 
+// Initialise le SDK Pi dès le chargement de la page (obligatoire avant tout autre appel)
+if (typeof Pi !== 'undefined') {
+  Pi.init({ version: "2.0", sandbox: true }); // sandbox: true = mode Testnet
+}
+
 function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg;
@@ -253,7 +258,6 @@ document.getElementById('loginBtn').addEventListener('click', async () => {
       await onLoginSuccess();
       return;
     }
-    Pi.init({ version: "2.0", sandbox: true }); // sandbox: true = mode Testnet
     const scopes = ['username'];
     const auth = await Pi.authenticate(scopes, onIncompletePaymentFound);
     currentUsername = auth.user.username;
