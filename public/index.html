@@ -208,7 +208,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const API_BASE = "https://foot-quiz-pi.onrender.com"; // <-- à remplacer par ton URL Render, ex: https://foot-quiz-pi.onrender.com
+const API_BASE = "REPLACE_WITH_RENDER_URL"; // <-- à remplacer par ton URL Render, ex: https://foot-quiz-pi.onrender.com
 
 let currentUsername = null;
 let currentQuiz = [];
@@ -244,14 +244,16 @@ function showAd(callback) {
 
 // ===== CONNEXION PI =====
 document.getElementById('loginBtn').addEventListener('click', async () => {
+  const btn = document.getElementById('loginBtn');
+  btn.textContent = "Connexion en cours...";
+  btn.disabled = true;
   try {
     if (typeof Pi === 'undefined') {
-      // Mode test navigateur classique (hors Pi Browser)
       currentUsername = 'testuser_' + Math.floor(Math.random() * 1000);
-      onLoginSuccess();
+      await onLoginSuccess();
       return;
     }
-    Pi.init({ version: "2.0" });
+    Pi.init({ version: "2.0", sandbox: true }); // sandbox: true = mode Testnet
     const scopes = ['username'];
     const auth = await Pi.authenticate(scopes, onIncompletePaymentFound);
     currentUsername = auth.user.username;
@@ -262,10 +264,12 @@ document.getElementById('loginBtn').addEventListener('click', async () => {
       body: JSON.stringify({ username: currentUsername })
     });
 
-    onLoginSuccess();
+    await onLoginSuccess();
   } catch (err) {
-    showToast("Erreur de connexion Pi");
+    showToast("Erreur: " + (err && err.message ? err.message : "connexion impossible"));
     console.error(err);
+    btn.textContent = "Se connecter avec Pi";
+    btn.disabled = false;
   }
 });
 
@@ -320,6 +324,78 @@ async function loadQuiz() {
 
   container.querySelectorAll('.option').forEach(el => {
     el.addEventListener('click', () => {
+      const qi = parseInt(el.dataset.q);
+      const oi = parseInt(el.dataset.o);
+      selectedAnswers[qi] = oi;
+      container.querySelectorAll(`.option[data-q="${qi}"]`).forEach(o => o.classList.remove('selected'));
+      el.classList.add('selected');
+    });
+  });
+}
+
+document.getElementById('submitQuizBtn').addEventListener('click', async () => {
+  if (selectedAnswers.includes(null)) {
+    showToast("Réponds à toutes les questions !");
+    return;
+  }
+  const res = await fetch(`${API_BASE}/api/quiz/submit`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: currentUsername, answers: selectedAnswers })
+  });
+  const data = await res.json();
+  if (data.error) {
+    showToast(data.error);
+    return;
+  }
+  showToast(`${data.correct}/${data.total} bonnes réponses, +${data.pointsEarned} points !`);
+  document.getElementById('pointsDisplay').textContent = data.totalPoints;
+  document.getElementById('submitQuizBtn').disabled = true;
+  document.getElementById('submitQuizBtn').textContent = "Quiz déjà fait aujourd'hui ✓";
+  await loadLeaderboard();
+});
+
+// ===== ROUE =====
+document.getElementById('spinBtn').addEventListener('click', () => {
+  showAd(async () => {
+    const res = await fetch(`${API_BASE}/api/wheel/spin`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: currentUsername })
+    });
+    const data = await res.json();
+    if (data.error) {
+      showToast(data.error);
+      return;
+    }
+    const wheel = document.getElementById('wheel');
+    const targetDeg = 1440 + (data.prizeIndex * 51) + 25;
+    wheel.style.transform = `rotate(${targetDeg}deg)`;
+
+    setTimeout(() => {
+      showToast(`Tu as gagné ${data.prize} points !`);
+      document.getElementById('pointsDisplay').textContent = data.totalPoints;
+      document.getElementById('spinBtn').disabled = true;
+      document.getElementById('spinBtn').textContent = "Roue déjà tournée ✓";
+      loadLeaderboard();
+    }, 3100);
+  });
+});
+
+// ===== CLASSEMENT =====
+async function loadLeaderboard() {
+  const res = await fetch(`${API_BASE}/api/leaderboard`);
+  const data = await res.json();
+  const list = document.getElementById('leaderboardList');
+  list.innerHTML = data.map((u, i) =>
+    `<li><span>${i + 1}. ${u.username}</span><span>${u.points} pts</span></li>`
+  ).join('') || '<li>Aucun joueur encore, sois le premier !</li>';
+}
+</script>
+
+</body>
+</html>
+k', () => {
       const qi = parseInt(el.dataset.q);
       const oi = parseInt(el.dataset.o);
       selectedAnswers[qi] = oi;
