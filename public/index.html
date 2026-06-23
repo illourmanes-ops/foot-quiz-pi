@@ -1,4 +1,363 @@
-mify({ username: currentUsername })
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Foot Quiz Pi</title>
+<script src="https://sdk.minepi.com/pi-sdk.js"></script>
+<style>
+  :root {
+    --pitch: #0d2818;
+    --pitch-dark: #071811;
+    --line: #1f4a30;
+    --gold: #e8b84b;
+    --gold-dim: #b88f2f;
+    --white: #f3f6f1;
+    --red: #c84b3a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--pitch-dark);
+    background-image:
+      repeating-linear-gradient(0deg, var(--pitch) 0px, var(--pitch) 60px, var(--pitch-dark) 60px, var(--pitch-dark) 120px);
+    color: var(--white);
+    font-family: 'Trebuchet MS', 'Segoe UI', sans-serif;
+    min-height: 100vh;
+    padding-bottom: 40px;
+  }
+  header {
+    text-align: center;
+    padding: 28px 16px 18px;
+    border-bottom: 3px solid var(--gold);
+    background: rgba(7,24,17,0.55);
+  }
+  header h1 {
+    margin: 0;
+    font-size: 1.9rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--gold);
+    text-shadow: 0 2px 0 #000;
+  }
+  header p { margin: 6px 0 0; color: #b7c9bb; font-size: 0.85rem; }
+
+  .scoreboard {
+    max-width: 420px;
+    margin: 18px auto;
+    background: #08130c;
+    border: 2px solid var(--gold-dim);
+    border-radius: 10px;
+    padding: 14px 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-variant-numeric: tabular-nums;
+  }
+  .scoreboard .label { font-size: 0.7rem; letter-spacing: 1px; color: #93a796; text-transform: uppercase; }
+  .scoreboard .value { font-size: 1.6rem; color: var(--gold); font-weight: bold; }
+
+  main { max-width: 420px; margin: 0 auto; padding: 0 16px; }
+
+  .card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 18px;
+    margin-bottom: 18px;
+  }
+  .card h2 {
+    margin: 0 0 12px;
+    font-size: 1.1rem;
+    color: var(--gold);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card p.desc { color: #aebcab; font-size: 0.85rem; margin-top: -4px; margin-bottom: 14px;}
+
+  button {
+    font-family: inherit;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 0.95rem;
+    font-weight: bold;
+    cursor: pointer;
+    width: 100%;
+    transition: transform 0.1s ease;
+  }
+  button:active { transform: scale(0.97); }
+  .btn-primary { background: var(--gold); color: #1a1a1a; }
+  .btn-primary:disabled { background: #4a4a40; color: #888; cursor: not-allowed; }
+  .btn-ghost { background: transparent; border: 1px solid var(--gold-dim); color: var(--gold); margin-top: 8px; }
+
+  .question { margin-bottom: 14px; }
+  .question p { margin: 0 0 8px; font-weight: bold; font-size: 0.92rem; }
+  .options { display: flex; flex-direction: column; gap: 6px; }
+  .option {
+    background: #11241a;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 9px 12px;
+    font-size: 0.88rem;
+    cursor: pointer;
+  }
+  .option.selected { border-color: var(--gold); background: #1d3322; }
+  .option.correct { border-color: #4caf50; background: #16321c; }
+  .option.wrong { border-color: var(--red); background: #3a1a16; }
+
+  .wheel-zone { text-align: center; }
+  .wheel {
+    width: 160px; height: 160px;
+    margin: 0 auto 16px;
+    border-radius: 50%;
+    border: 6px solid var(--gold);
+    background: conic-gradient(
+      #c84b3a 0deg 51deg, #1d3322 51deg 102deg, #c84b3a 102deg 154deg,
+      #1d3322 154deg 205deg, #c84b3a 205deg 257deg, #1d3322 257deg 308deg, #b88f2f 308deg 360deg);
+    position: relative;
+    transition: transform 3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .wheel::after {
+    content: "▼";
+    position: absolute;
+    top: -18px; left: 50%;
+    transform: translateX(-50%);
+    color: var(--gold);
+    font-size: 1.2rem;
+  }
+
+  .leaderboard-list { list-style: none; padding: 0; margin: 0; }
+  .leaderboard-list li {
+    display: flex; justify-content: space-between;
+    padding: 8px 0; border-bottom: 1px solid var(--line);
+    font-size: 0.88rem;
+  }
+  .leaderboard-list li:first-child { color: var(--gold); font-weight: bold; }
+
+  .toast {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: var(--gold); color: #1a1a1a; padding: 10px 18px;
+    border-radius: 8px; font-weight: bold; font-size: 0.85rem;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.4);
+    opacity: 0; transition: opacity 0.3s;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
+
+  .ad-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.85);
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; z-index: 999;
+  }
+  .ad-overlay .ad-box {
+    background: #111; border: 2px dashed var(--gold);
+    padding: 40px 30px; border-radius: 10px; text-align: center;
+  }
+  .ad-overlay p { margin: 0 0 10px; color: var(--gold); font-weight: bold; }
+  .ad-overlay .countdown { font-size: 2rem; color: white; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>⚽ Foot Quiz Pi</h1>
+  <p>Quiz du jour • Roue de la chance • Classement</p>
+</header>
+
+<div class="scoreboard">
+  <div>
+    <div class="label">Joueur</div>
+    <div class="value" id="usernameDisplay" style="font-size:1.1rem;">—</div>
+  </div>
+  <div>
+    <div class="label">Points</div>
+    <div class="value" id="pointsDisplay">0</div>
+  </div>
+</div>
+
+<main>
+
+  <div class="card" id="loginCard">
+    <h2>🔐 Connexion</h2>
+    <p class="desc">Connecte-toi avec Pi Network pour jouer et garder tes points.</p>
+    <button class="btn-primary" id="loginBtn">Se connecter avec Pi</button>
+  </div>
+
+  <div class="card" id="quizCard" style="display:none;">
+    <h2>🧠 Quiz du jour</h2>
+    <p class="desc">5 questions, 10 points par bonne réponse.</p>
+    <div id="quizContainer"></div>
+    <button class="btn-primary" id="submitQuizBtn">Valider mes réponses</button>
+  </div>
+
+  <div class="card wheel-zone" id="wheelCard" style="display:none;">
+    <h2 style="justify-content:center;">🎡 Roue quotidienne</h2>
+    <div class="wheel" id="wheel"></div>
+    <button class="btn-primary" id="spinBtn">Regarder une pub et tourner</button>
+  </div>
+
+  <div class="card" id="leaderboardCard" style="display:none;">
+    <h2>🏆 Classement</h2>
+    <ul class="leaderboard-list" id="leaderboardList"></ul>
+  </div>
+
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API_BASE = "https://foot-quiz-pi.onrender.com"; // <-- à remplacer par ton URL Render, ex: https://foot-quiz-pi.onrender.com
+
+let currentUsername = null;
+let currentQuiz = [];
+let selectedAnswers = [];
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function showAd(callback) {
+  const overlay = document.createElement('div');
+  overlay.className = 'ad-overlay';
+  overlay.innerHTML = `
+    <div class="ad-box">
+      <p>📺 Publicité</p>
+      <div class="countdown" id="adCountdown">5</div>
+    </div>`;
+  document.body.appendChild(overlay);
+  let seconds = 5;
+  const interval = setInterval(() => {
+    seconds--;
+    document.getElementById('adCountdown').textContent = seconds;
+    if (seconds <= 0) {
+      clearInterval(interval);
+      document.body.removeChild(overlay);
+      callback();
+    }
+  }, 1000);
+}
+
+// ===== CONNEXION PI =====
+document.getElementById('loginBtn').addEventListener('click', async () => {
+  try {
+    if (typeof Pi === 'undefined') {
+      // Mode test navigateur classique (hors Pi Browser)
+      currentUsername = 'testuser_' + Math.floor(Math.random() * 1000);
+      onLoginSuccess();
+      return;
+    }
+    Pi.init({ version: "2.0" });
+    const scopes = ['username'];
+    const auth = await Pi.authenticate(scopes, onIncompletePaymentFound);
+    currentUsername = auth.user.username;
+
+    await fetch(`${API_BASE}/api/pi/verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: currentUsername })
+    });
+
+    onLoginSuccess();
+  } catch (err) {
+    showToast("Erreur de connexion Pi");
+    console.error(err);
+  }
+});
+
+function onIncompletePaymentFound(payment) {
+  console.log("Paiement incomplet trouvé :", payment);
+}
+
+async function onLoginSuccess() {
+  document.getElementById('loginCard').style.display = 'none';
+  document.getElementById('quizCard').style.display = 'block';
+  document.getElementById('wheelCard').style.display = 'block';
+  document.getElementById('leaderboardCard').style.display = 'block';
+  document.getElementById('usernameDisplay').textContent = currentUsername;
+  await refreshUserStatus();
+  await loadQuiz();
+  await loadLeaderboard();
+}
+
+async function refreshUserStatus() {
+  const res = await fetch(`${API_BASE}/api/user/${currentUsername}`);
+  const data = await res.json();
+  document.getElementById('pointsDisplay').textContent = data.points;
+
+  if (data.quizDoneToday) {
+    document.getElementById('submitQuizBtn').disabled = true;
+    document.getElementById('submitQuizBtn').textContent = "Quiz déjà fait aujourd'hui ✓";
+  }
+  if (data.wheelDoneToday) {
+    document.getElementById('spinBtn').disabled = true;
+    document.getElementById('spinBtn').textContent = "Roue déjà tournée ✓";
+  }
+}
+
+// ===== QUIZ =====
+async function loadQuiz() {
+  const res = await fetch(`${API_BASE}/api/quiz/today`);
+  const data = await res.json();
+  currentQuiz = data.questions;
+  selectedAnswers = new Array(currentQuiz.length).fill(null);
+
+  const container = document.getElementById('quizContainer');
+  container.innerHTML = '';
+  currentQuiz.forEach((q, qi) => {
+    const div = document.createElement('div');
+    div.className = 'question';
+    div.innerHTML = `<p>${qi + 1}. ${q.question}</p>
+      <div class="options">
+        ${q.options.map((opt, oi) => `<div class="option" data-q="${qi}" data-o="${oi}">${opt}</div>`).join('')}
+      </div>`;
+    container.appendChild(div);
+  });
+
+  container.querySelectorAll('.option').forEach(el => {
+    el.addEventListener('click', () => {
+      const qi = parseInt(el.dataset.q);
+      const oi = parseInt(el.dataset.o);
+      selectedAnswers[qi] = oi;
+      container.querySelectorAll(`.option[data-q="${qi}"]`).forEach(o => o.classList.remove('selected'));
+      el.classList.add('selected');
+    });
+  });
+}
+
+document.getElementById('submitQuizBtn').addEventListener('click', async () => {
+  if (selectedAnswers.includes(null)) {
+    showToast("Réponds à toutes les questions !");
+    return;
+  }
+  const res = await fetch(`${API_BASE}/api/quiz/submit`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: currentUsername, answers: selectedAnswers })
+  });
+  const data = await res.json();
+  if (data.error) {
+    showToast(data.error);
+    return;
+  }
+  showToast(`${data.correct}/${data.total} bonnes réponses, +${data.pointsEarned} points !`);
+  document.getElementById('pointsDisplay').textContent = data.totalPoints;
+  document.getElementById('submitQuizBtn').disabled = true;
+  document.getElementById('submitQuizBtn').textContent = "Quiz déjà fait aujourd'hui ✓";
+  await loadLeaderboard();
+});
+
+// ===== ROUE =====
+document.getElementById('spinBtn').addEventListener('click', () => {
+  showAd(async () => {
+    const res = await fetch(`${API_BASE}/api/wheel/spin`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: currentUsername })
     });
     const data = await res.json();
     if (data.error) {
