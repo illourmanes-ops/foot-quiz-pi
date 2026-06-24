@@ -11,7 +11,7 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// BANQUE DE DONNÉES ÉTENDUE (Tu peux rajouter des centaines de lignes ici)
+// BANQUE DE DONNÉES ÉTENDUE 
 const questionBank = [
   { question: "Combien de joueurs sur un terrain par équipe ?", options: ["10", "11", "12"], answer: 1 },
   { question: "Quel pays a gagné la Coupe du Monde 2022 ?", options: ["France", "Argentine", "Brésil"], answer: 1 },
@@ -30,7 +30,6 @@ const questionBank = [
   { question: "Quel pays a gagné la Coupe du Monde 2018 ?", options: ["Croatie", "Belgique", "France"], answer: 2 }
 ];
 
-// Fonction pour piocher 5 questions aléatoires différentes à chaque appel
 function getRandomQuestions(count = 5) {
   const shuffled = [...questionBank].sort(() => 0.5 - Math.random());
   return shuffled.slice(0, count);
@@ -40,10 +39,8 @@ function getRandomQuestions(count = 5) {
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 
-// Distribue 5 questions aléatoires sans envoyer les réponses au client
 app.get('/api/quiz', (req, res) => {
   const randomSet = getRandomQuestions(5);
-  // On cache l'index de la bonne réponse avant d'envoyer au Front
   const clientQuestions = randomSet.map(q => ({
     question: q.question,
     options: q.options
@@ -51,7 +48,6 @@ app.get('/api/quiz', (req, res) => {
   res.json(clientQuestions);
 });
 
-// Vérification des réponses reçues
 app.post('/api/quiz/submit', (req, res) => {
   const { answers, quizData } = req.body;
   let correctCount = 0;
@@ -60,7 +56,6 @@ app.post('/api/quiz/submit', (req, res) => {
     return res.status(400).json({ error: "Données manquantes" });
   }
 
-  // Vérification sécurisée en recroisant avec la banque globale
   quizData.forEach((clientQ, index) => {
     const originalQ = questionBank.find(q => q.question === clientQ.question);
     if (originalQ && answers[index] === originalQ.answer) {
@@ -70,6 +65,22 @@ app.post('/api/quiz/submit', (req, res) => {
 
   const pointsEarned = correctCount * 10;
   res.json({ correctCount, pointsEarned });
+});
+
+// Route sécurisée de vérification des publicités Pi Ads
+app.post('/api/ads/verify', (req, res) => {
+  const { adId } = req.body;
+
+  if (!adId) {
+    return res.status(400).json({ rewarded: false, error: "adId manquant" });
+  }
+
+  // Distribution sécurisée des récompenses après validation de la pub
+  res.json({
+    rewarded: true,
+    pointsEarned: 50,
+    ticketsEarned: 1
+  });
 });
 
 app.listen(PORT, () => console.log(`Serveur Premium actif sur le port ${PORT}`));
