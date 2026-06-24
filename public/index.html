@@ -248,7 +248,8 @@ function showAd(callback) {
 }
 
 // ===== RÉVEIL DU SERVEUR (Render gratuit peut être endormi) =====
-async function wakeUpServer(maxAttempts = 8) {
+async function wakeUpServer(maxAttempts = 30) {
+  const btn = document.getElementById('loginBtn');
   for (let i = 0; i < maxAttempts; i++) {
     try {
       const res = await fetch(`${API_BASE}/api/health`);
@@ -256,6 +257,7 @@ async function wakeUpServer(maxAttempts = 8) {
     } catch (e) {
       // serveur pas encore prêt, on réessaie
     }
+    if (btn) btn.textContent = `Réveil du serveur... (${i * 2}s)`;
     await new Promise(r => setTimeout(r, 2000));
   }
   return false;
