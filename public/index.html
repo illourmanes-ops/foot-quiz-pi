@@ -3,61 +3,127 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Foot Quiz Pi</title>
+    <title>Foot Quiz Pi - Premium</title>
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Inter:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        :root { --pitch: #0d2818; --gold: #e8b84b; --white: #f3f6f1; }
+        :root { --pitch: #0d2818; --gold: #e8b84b; --white: #f3f6f1; --red: #ff4d4d; --green: #2ecc71; }
         body { background: #061309; color: var(--white); font-family: 'Inter', sans-serif; margin: 0; padding: 20px; }
         .card { background: rgba(255,255,255,0.05); border: 1px solid #1f4a30; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
-        button { background: var(--gold); border: none; padding: 12px; width: 100%; border-radius: 8px; font-weight: 700; cursor: pointer; }
-        .option { background: #11241a; border: 1px solid #1f4a30; padding: 10px; margin: 5px 0; cursor: pointer; border-radius: 6px; }
-        .option.selected { border-color: var(--gold); }
+        h1, h2 { font-family: 'Oswald', sans-serif; color: var(--gold); margin-top: 0; }
+        button { background: var(--gold); border: none; padding: 12px; width: 100%; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 1rem; margin-top: 5px;}
+        button:disabled { background: #444; color: #888; cursor: not-allowed; }
+        .btn-ad { background: linear-gradient(135deg, #e67e22, #f39c12); color: white; }
+        .option { background: #11241a; border: 1px solid #1f4a30; padding: 10px; margin: 5px 0; cursor: pointer; border-radius: 6px; transition: 0.2s; }
+        .option.selected { border-color: var(--gold); background: #1d3322; }
+        .match-box { background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; margin-top: 10px; text-align: center; border: 1px solid #2c3e50;}
+        .bet-buttons { display: flex; gap: 10px; margin-top: 10px; }
+        .bet-buttons button { flex: 1; font-size: 0.85rem; }
     </style>
 </head>
 <body>
 
-<header style="text-align:center;">
-    <h1>⚽ Foot Quiz Pi</h1>
+<header style="text-align:center; margin-bottom: 30px;">
+    <h1>⚽ FOOT QUIZ PI - INFINI ⚽</h1>
+    <p style="color: var(--gold);">Des quiz illimités • Regarde des pubs pour parier !</p>
 </header>
 
-<main>
-    <div class="card" id="loginCard">
-        <h2>Connexion</h2>
-        <button id="loginBtn">Se connecter avec Pi</button>
+<main style="max-width: 500px; margin: 0 auto;">
+    <div class="card" style="display:flex; justify-content: space-around; text-align:center;">
+        <div><div>Points</div><div id="ptsDisplay" style="font-size:1.5rem; font-weight:bold; color:var(--gold);">0</div></div>
+        <div><div>Tickets Paris</div><div id="ticketsDisplay" style="font-size:1.5rem; font-weight:bold; color:var(--green);">0</div></div>
     </div>
 
-    <div class="card" id="quizCard" style="display:none;">
-        <h2>Quiz du jour</h2>
-        <div id="quizContainer"></div>
-        <button id="submitQuizBtn" style="margin-top:10px;">Valider</button>
+    <div class="card" id="loginCard">
+        <h2>🔐 Accès au Stade</h2>
+        <button id="loginBtn">Se connecter avec Pi Network</button>
+    </div>
+
+    <div id="gameZone" style="display:none;">
+        <div class="card" style="border: 2px dashed var(--gold);">
+            <h2>📺 Zone TV - Sponsor</h2>
+            <p>Regarde une vidéo publicitaire pour gagner 1 Ticket de Pari et +50 points !</p>
+            <button class="btn-ad" id="watchAdBtn">🎬 Regarder la Pub Vidéo</button>
+        </div>
+
+        <div class="card">
+            <h2>🏆 Paris du Jour</h2>
+            <p>Mise tes Tickets gagnés grâce aux pubs sur les vrais matchs.</p>
+            <div class="match-box">
+                <div style="font-weight:bold;">Real Madrid 🆚 FC Barcelone</div>
+                <div class="bet-buttons">
+                    <button onclick="placeBet('Real Madrid')">Victoire Real</button>
+                    <button onclick="placeBet('Nul')">Nul</button>
+                    <button onclick="placeBet('Barcelone')">Victoire Barça</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>🧠 Quiz (Série Infinie)</h2>
+            <div id="quizContainer">Chargement des questions...</div>
+            <button id="submitQuizBtn">Valider et charger la suite</button>
+        </div>
     </div>
 </main>
-
-<div id="toast" style="position:fixed; bottom:20px; background:var(--gold); color:#000; padding:10px; border-radius:5px; display:none;"></div>
 
 <script>
     const API_BASE = "https://foot-quiz-pi.onrender.com";
     let currentQuiz = [];
     let selectedAnswers = [];
+    let userPoints = 0;
+    let userTickets = 0;
 
-    // Initialisation Pi
     if (typeof Pi !== 'undefined') Pi.init({ version: "2.0", sandbox: true });
 
+    // Gestion des publicités Pi Ads
+    document.getElementById('watchAdBtn').addEventListener('click', async () => {
+        const btn = document.getElementById('watchAdBtn');
+        btn.disabled = true;
+        btn.textContent = "Chargement de la vidéo...";
+
+        if (typeof Pi !== 'undefined' && Pi.Ads) {
+            try {
+                const res = await Pi.Ads.showAd("rewarded");
+                if (res.result === "AD_REWARDED") rewardUser();
+            } catch(e) { rewardUser(); }
+        } else {
+            setTimeout(() => { rewardUser(); }, 1500);
+        }
+    });
+
+    function rewardUser() {
+        userPoints += 50; userTickets += 1;
+        document.getElementById('ptsDisplay').textContent = userPoints;
+        document.getElementById('ticketsDisplay').textContent = userTickets;
+        document.getElementById('watchAdBtn').disabled = false;
+        document.getElementById('watchAdBtn').textContent = "🎬 Regarder la Pub Vidéo";
+        alert("🎁 +50 points et 1 Ticket de pari obtenus !");
+    }
+
+    window.placeBet = (prediction) => {
+        if (userTickets < 1) { alert("❌ Il te faut un ticket publicitaire !"); return; }
+        userTickets--;
+        document.getElementById('ticketsDisplay').textContent = userTickets;
+        alert(`⚽ Pari enregistré sur : ${prediction} !`);
+    };
+
+    // Chargement dynamique depuis le serveur
     async function loadQuiz() {
         try {
+            document.getElementById('quizContainer').innerHTML = "Chargement de nouvelles questions...";
             const res = await fetch(`${API_BASE}/api/quiz`);
             currentQuiz = await res.json();
             selectedAnswers = new Array(currentQuiz.length).fill(null);
             renderQuiz();
-        } catch (e) { document.getElementById('quizContainer').innerHTML = "Erreur chargement quiz."; }
+        } catch (e) { document.getElementById('quizContainer').innerHTML = "Erreur de chargement du quiz."; }
     }
 
     function renderQuiz() {
         const container = document.getElementById('quizContainer');
         container.innerHTML = currentQuiz.map((q, qIdx) => `
-            <div>
-                <p>${q.question}</p>
+            <div style="margin-bottom:15px;">
+                <p style="font-weight:bold;">⚽ ${q.question}</p>
                 ${q.options.map((opt, oIdx) => `
                     <div class="option ${selectedAnswers[qIdx] === oIdx ? 'selected' : ''}" 
                          onclick="selectOption(${qIdx}, ${oIdx})">${opt}</div>
@@ -71,27 +137,40 @@
         renderQuiz();
     };
 
-    document.getElementById('loginBtn').addEventListener('click', async () => {
-        try {
-            const auth = await Pi.authenticate(['username'], () => {});
-            document.getElementById('loginCard').style.display = 'none';
-            document.getElementById('quizCard').style.display = 'block';
-            loadQuiz();
-        } catch (e) { alert("Erreur connexion"); }
+    document.getElementById('loginBtn').addEventListener('click', () => {
+        document.getElementById('loginCard').style.display = 'none';
+        document.getElementById('gameZone').style.display = 'block';
+        loadQuiz();
     });
 
     document.getElementById('submitQuizBtn').addEventListener('click', async () => {
-        const res = await fetch(`${API_BASE}/api/quiz/submit`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: "user_test", answers: selectedAnswers })
-        });
-        const data = await res.json();
-        alert("Quiz terminé ! Points : " + data.pointsEarned);
+        if (selectedAnswers.includes(null)) { alert("Réponds à toutes les questions !"); return; }
+        
+        const btn = document.getElementById('submitQuizBtn');
+        btn.disabled = true;
+        btn.textContent = "Calcul du score...";
+
+        try {
+            const res = await fetch(`${API_BASE}/api/quiz/submit`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: "player", answers: selectedAnswers, quizData: currentQuiz })
+            });
+            const data = await res.json();
+            userPoints += data.pointsEarned;
+            document.getElementById('ptsDisplay').textContent = userPoints;
+            
+            alert(`🎉 Série terminée ! Score : ${data.correctCount}/${currentQuiz.length} (+${data.pointsEarned} pts). Place à la suite !`);
+            
+            // Rechargement immédiat et automatique de nouvelles questions !
+            btn.disabled = false;
+            btn.textContent = "Valider et charger la suite";
+            loadQuiz();
+        } catch(e) {
+            alert("Erreur réseau.");
+            btn.disabled = false;
+        }
     });
 </script>
-
 </body>
 </html>
-
-
