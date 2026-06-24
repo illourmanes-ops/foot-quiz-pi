@@ -311,7 +311,7 @@ document.getElementById('loginBtn').addEventListener('click', async () => {
       await onLoginSuccess();
       return;
     }
-    const scopes = ['username'];
+    const scopes = ['username', 'payments'];
     const auth = await Pi.authenticate(scopes, onIncompletePaymentFound);
     currentUsername = auth.user.username;
 
@@ -336,39 +336,46 @@ document.getElementById('testPaymentBtn').addEventListener('click', () => {
   btn.disabled = true;
   btn.textContent = "Paiement en cours...";
 
-  Pi.createPayment({
-    amount: 0.01,
-    memo: "Test de paiement Foot Quiz Pi",
-    metadata: { type: "test_payment" }
-  }, {
-    onReadyForServerApproval: async (paymentId) => {
-      await fetch(`${API_BASE}/api/pi/approve`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ paymentId })
-      });
-    },
-    onReadyForServerCompletion: async (paymentId, txid) => {
-      await fetch(`${API_BASE}/api/pi/complete`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ paymentId, txid })
-      });
-      showToast("Paiement test réussi !");
-      btn.textContent = "Paiement effectué ✓";
-    },
-    onCancel: (paymentId) => {
-      showToast("Paiement annulé");
-      btn.disabled = false;
-      btn.textContent = "Payer 0.01 Pi (test)";
-    },
-    onError: (error, payment) => {
-      showToast("Erreur paiement: " + (error && error.message ? error.message : "inconnue"));
-      console.error(error);
-      btn.disabled = false;
-      btn.textContent = "Payer 0.01 Pi (test)";
-    }
-  });
+  try {
+    Pi.createPayment({
+      amount: 0.01,
+      memo: "Test de paiement Foot Quiz Pi",
+      metadata: { type: "test_payment" }
+    }, {
+      onReadyForServerApproval: async (paymentId) => {
+        await fetch(`${API_BASE}/api/pi/approve`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ paymentId })
+        });
+      },
+      onReadyForServerCompletion: async (paymentId, txid) => {
+        await fetch(`${API_BASE}/api/pi/complete`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ paymentId, txid })
+        });
+        showToast("Paiement test réussi !");
+        btn.textContent = "Paiement effectué ✓";
+      },
+      onCancel: (paymentId) => {
+        showToast("Paiement annulé");
+        btn.disabled = false;
+        btn.textContent = "Payer 0.01 Pi (test)";
+      },
+      onError: (error, payment) => {
+        showToast("Erreur paiement: " + (error && error.message ? error.message : "inconnue"));
+        console.error(error);
+        btn.disabled = false;
+        btn.textContent = "Payer 0.01 Pi (test)";
+      }
+    });
+  } catch (err) {
+    showToast("Erreur paiement: " + (err && err.message ? err.message : "inconnue"));
+    console.error(err);
+    btn.disabled = false;
+    btn.textContent = "Payer 0.01 Pi (test)";
+  }
 });
 
 function onIncompletePaymentFound(payment) {
