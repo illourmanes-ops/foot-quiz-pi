@@ -1,4 +1,4 @@
-// server.js - Backend Foot Quiz Pi Premium
+'// server.js - Backend Foot Quiz Pi Premium Réel
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
@@ -7,11 +7,14 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+const PI_API_KEY = process.env.PI_API_KEY; 
+const PI_API_BASE = "https://api.minepi.com/v2";
+
 app.use(cors());
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// BANQUE DE DONNÉES ÉTENDUE 
+// BANQUE DE DONNÉES DU QUIZ
 const questionBank = [
   { question: "Combien de joueurs sur un terrain par équipe ?", options: ["10", "11", "12"], answer: 1 },
   { question: "Quel pays a gagné la Coupe du Monde 2022 ?", options: ["France", "Argentine", "Brésil"], answer: 1 },
@@ -35,8 +38,7 @@ function getRandomQuestions(count = 5) {
   return shuffled.slice(0, count);
 }
 
-// --- ROUTES ---
-
+// --- ROUTES DU QUIZ ---
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 
 app.get('/api/quiz', (req, res) => {
@@ -67,20 +69,48 @@ app.post('/api/quiz/submit', (req, res) => {
   res.json({ correctCount, pointsEarned });
 });
 
-// Route sécurisée de vérification des publicités Pi Ads
+// --- ROUTE DE VÉRIFICATION DES PUBS PI ADS ---
 app.post('/api/ads/verify', (req, res) => {
   const { adId } = req.body;
+  if (!adId) return res.status(400).json({ rewarded: false, error: "adId manquant" });
 
-  if (!adId) {
-    return res.status(400).json({ rewarded: false, error: "adId manquant" });
-  }
-
-  // Distribution sécurisée des récompenses après validation de la pub
   res.json({
     rewarded: true,
     pointsEarned: 50,
     ticketsEarned: 1
   });
+});
+
+// --- ROUTES BLOCKCHAIN PAIEMENTS PI (0.1 PI) ---
+app.post('/api/pi/approve', async (req, res) => {
+  const { paymentId } = req.body;
+  if (!paymentId || !PI_API_KEY) return res.status(400).json({ error: 'paymentId ou clé API requis' });
+  try {
+    const r = await fetch(`${PI_API_BASE}/payments/${paymentId}/approve`, {
+      method: 'POST',
+      headers: { Authorization: `Key ${PI_API_KEY}` }
+    });
+    const data = await r.json();
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/pi/complete', async (req, res) => {
+  const { paymentId, txid } = req.body;
+  if (!paymentId || !txid || !PI_API_KEY) return res.status(400).json({ error: 'Données manquantes' });
+  try {
+    const r = await fetch(`${PI_API_BASE}/payments/${paymentId}/complete`, {
+      method: 'POST',
+      headers: { Authorization: `Key ${PI_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ txid })
+    });
+    const data = await r.json();
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.listen(PORT, () => console.log(`Serveur Premium actif sur le port ${PORT}`));
