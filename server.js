@@ -1,4 +1,3 @@
-'// server.js - Backend Foot Quiz Pi Premium Réel
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
@@ -12,9 +11,10 @@ const PI_API_BASE = "https://api.minepi.com/v2";
 
 app.use(cors());
 app.use(bodyParser.json());
-app.use(express.static(path.join(__dirname, 'public')));
 
-// BANQUE DE DONNÉES DU QUIZ
+// Rend les fichiers de la racine accessibles (index.html)
+app.use(express.static(__dirname));
+
 const questionBank = [
   { question: "Combien de joueurs sur un terrain par équipe ?", options: ["10", "11", "12"], answer: 1 },
   { question: "Quel pays a gagné la Coupe du Monde 2022 ?", options: ["France", "Argentine", "Brésil"], answer: 1 },
@@ -33,68 +33,43 @@ const questionBank = [
   { question: "Quel pays a gagné la Coupe du Monde 2018 ?", options: ["Croatie", "Belgique", "France"], answer: 2 }
 ];
 
-function getRandomQuestions(count = 5) {
-  const shuffled = [...questionBank].sort(() => 0.5 - Math.random());
-  return shuffled.slice(0, count);
-}
-
-// --- ROUTES DU QUIZ ---
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 
 app.get('/api/quiz', (req, res) => {
-  const randomSet = getRandomQuestions(5);
-  const clientQuestions = randomSet.map(q => ({
-    question: q.question,
-    options: q.options
-  }));
+  const shuffled = [...questionBank].sort(() => 0.5 - Math.random());
+  const randomSet = shuffled.slice(0, 5);
+  const clientQuestions = randomSet.map(q => ({ question: q.question, options: q.options }));
   res.json(clientQuestions);
 });
 
 app.post('/api/quiz/submit', (req, res) => {
   const { answers, quizData } = req.body;
   let correctCount = 0;
-
-  if (!answers || !quizData) {
-    return res.status(400).json({ error: "Données manquantes" });
-  }
+  if (!answers || !quizData) return res.status(400).json({ error: "Données manquantes" });
 
   quizData.forEach((clientQ, index) => {
     const originalQ = questionBank.find(q => q.question === clientQ.question);
-    if (originalQ && answers[index] === originalQ.answer) {
-      correctCount++;
-    }
+    if (originalQ && answers[index] === originalQ.answer) correctCount++;
   });
 
-  const pointsEarned = correctCount * 10;
-  res.json({ correctCount, pointsEarned });
+  res.json({ correctCount, pointsEarned: correctCount * 10 });
 });
 
-// --- ROUTE DE VÉRIFICATION DES PUBS PI ADS ---
 app.post('/api/ads/verify', (req, res) => {
-  const { adId } = req.body;
-  if (!adId) return res.status(400).json({ rewarded: false, error: "adId manquant" });
-
-  res.json({
-    rewarded: true,
-    pointsEarned: 50,
-    ticketsEarned: 1
-  });
+  if (!req.body.adId) return res.status(400).json({ rewarded: false });
+  res.json({ rewarded: true, pointsEarned: 50, ticketsEarned: 1 });
 });
 
-// --- ROUTES BLOCKCHAIN PAIEMENTS PI (0.1 PI) ---
 app.post('/api/pi/approve', async (req, res) => {
   const { paymentId } = req.body;
-  if (!paymentId || !PI_API_KEY) return res.status(400).json({ error: 'paymentId ou clé API requis' });
+  if (!paymentId || !PI_API_KEY) return res.status(400).json({ error: 'Données manquantes' });
   try {
     const r = await fetch(`${PI_API_BASE}/payments/${paymentId}/approve`, {
       method: 'POST',
       headers: { Authorization: `Key ${PI_API_KEY}` }
     });
-    const data = await r.json();
-    res.json(data);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+    res.json(await r.json());
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 app.post('/api/pi/complete', async (req, res) => {
@@ -106,11 +81,13 @@ app.post('/api/pi/complete', async (req, res) => {
       headers: { Authorization: `Key ${PI_API_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ txid })
     });
-    const data = await r.json();
-    res.json(data);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+    res.json(await r.json());
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-app.listen(PORT, () => console.log(`Serveur Premium actif sur le port ${PORT}`));
+// Route par défaut qui distribue l'index.html
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+app.listen(PORT, () => console.log(`Serveur actif sur le port ${PORT}`));
