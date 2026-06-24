@@ -208,15 +208,36 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const API_BASE = "REPLACE_WITH_RENDER_URL"; // <-- à remplacer par ton URL Render, ex: https://foot-quiz-pi.onrender.com
+const API_BASE = "https://foot-quiz-pi.onrender.com";
+
+// Capteur d'erreurs global : affiche toute erreur JS directement dans l'app
+window.addEventListener('error', (e) => {
+  const t = document.createElement('div');
+  t.style.position = 'fixed';
+  t.style.top = '10px';
+  t.style.left = '10px';
+  t.style.right = '10px';
+  t.style.background = '#c84b3a';
+  t.style.color = 'white';
+  t.style.padding = '10px';
+  t.style.borderRadius = '8px';
+  t.style.zIndex = '9999';
+  t.style.fontSize = '0.8rem';
+  t.textContent = 'Erreur JS: ' + e.message + ' (ligne ' + e.lineno + ')';
+  document.body.appendChild(t);
+});
 
 let currentUsername = null;
 let currentQuiz = [];
 let selectedAnswers = [];
 
 // Initialise le SDK Pi dès le chargement de la page (obligatoire avant tout autre appel)
-if (typeof Pi !== 'undefined') {
-  Pi.init({ version: "2.0", sandbox: true }); // sandbox: true = mode Testnet
+try {
+  if (typeof Pi !== 'undefined') {
+    Pi.init({ version: "2.0", sandbox: true }); // sandbox: true = mode Testnet
+  }
+} catch (e) {
+  console.error('Erreur Pi.init:', e);
 }
 
 function showToast(msg) {
