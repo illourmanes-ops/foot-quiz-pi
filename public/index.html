@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Foot Quiz Pi - Premium</title>
+    <title>Foot Quiz Pi - Premium Pro</title>
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Inter:wght@400;700&display=swap" rel="stylesheet">
     <style>
@@ -24,7 +24,7 @@
 <body>
 
 <header style="text-align:center; margin-bottom: 30px;">
-    <h1>⚽ FOOT QUIZ PI - INFINI ⚽</h1>
+    <h1>⚽ FOOT QUIZ PI - INFINI Pro ⚽</h1>
     <p style="color: var(--gold);">Des quiz illimités • Regarde des pubs pour parier !</p>
 </header>
 
@@ -76,29 +76,79 @@
 
     if (typeof Pi !== 'undefined') Pi.init({ version: "2.0", sandbox: true });
 
-    // Gestion des publicités Pi Ads
+    // Intégration officielle du SDK de Publicité Pi Network
     document.getElementById('watchAdBtn').addEventListener('click', async () => {
         const btn = document.getElementById('watchAdBtn');
         btn.disabled = true;
-        btn.textContent = "Chargement de la vidéo...";
+        btn.textContent = "Vérification du sponsor...";
 
         if (typeof Pi !== 'undefined' && Pi.Ads) {
             try {
-                const res = await Pi.Ads.showAd("rewarded");
-                if (res.result === "AD_REWARDED") rewardUser();
-            } catch(e) { rewardUser(); }
+                const isAdReadyResponse = await Pi.Ads.isAdReady("rewarded");
+
+                if (isAdReadyResponse.ready === false) {
+                    btn.textContent = "Chargement de la vidéo...";
+                    const requestAdResponse = await Pi.Ads.requestAd("rewarded");
+
+                    if (requestAdResponse.result === "ADS_NOT_SUPPORTED") {
+                        alert("Veuillez mettre à jour votre Pi Browser pour regarder des vidéos.");
+                        resetAdButton(btn);
+                        return;
+                    }
+
+                    if (requestAdResponse.result !== "AD_LOADED") {
+                        alert("Publicité temporairement indisponible. Réessayez plus tard.");
+                        resetAdButton(btn);
+                        return;
+                    }
+                }
+
+                btn.textContent = "Lecture en cours...";
+                const showAdResponse = await Pi.Ads.showAd("rewarded");
+
+                if (showAdResponse.result === "AD_REWARDED") {
+                    const adId = showAdResponse.adId; 
+                    
+                    // Envoi de l'adId au serveur pour validation sécurisée
+                    const res = await fetch(`${API_BASE}/api/ads/verify`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username: "player", adId: adId })
+                    });
+                    
+                    const data = await res.json();
+                    if (data.rewarded === true) {
+                        userPoints += data.pointsEarned;
+                        userTickets += data.ticketsEarned;
+                        document.getElementById('ptsDisplay').textContent = userPoints;
+                        document.getElementById('ticketsDisplay').textContent = userTickets;
+                        alert(`🎁 Succès ! +${data.pointsEarned} points et +${data.ticketsEarned} Ticket ajoutés.`);
+                    } else {
+                        alert("Erreur lors de la validation du serveur.");
+                    }
+                } else {
+                    alert("La vidéo n'a pas été regardée en entier.");
+                }
+            } catch (err) {
+                alert("Erreur système avec la publicité.");
+            } finally {
+                resetAdButton(btn);
+            }
         } else {
-            setTimeout(() => { rewardUser(); }, 1500);
+            // Mode simulation si testé en dehors du Pi Browser
+            setTimeout(() => {
+                userPoints += 50; userTickets += 1;
+                document.getElementById('ptsDisplay').textContent = userPoints;
+                document.getElementById('ticketsDisplay').textContent = userTickets;
+                alert("🎮 Mode Test : +50 points et 1 Ticket ajoutés !");
+                resetAdButton(btn);
+            }, 1500);
         }
     });
 
-    function rewardUser() {
-        userPoints += 50; userTickets += 1;
-        document.getElementById('ptsDisplay').textContent = userPoints;
-        document.getElementById('ticketsDisplay').textContent = userTickets;
-        document.getElementById('watchAdBtn').disabled = false;
-        document.getElementById('watchAdBtn').textContent = "🎬 Regarder la Pub Vidéo";
-        alert("🎁 +50 points et 1 Ticket de pari obtenus !");
+    function resetAdButton(btn) {
+        btn.disabled = false;
+        btn.textContent = "🎬 Regarder la Pub Vidéo";
     }
 
     window.placeBet = (prediction) => {
@@ -108,7 +158,6 @@
         alert(`⚽ Pari enregistré sur : ${prediction} !`);
     };
 
-    // Chargement dynamique depuis le serveur
     async function loadQuiz() {
         try {
             document.getElementById('quizContainer').innerHTML = "Chargement de nouvelles questions...";
@@ -123,7 +172,7 @@
         const container = document.getElementById('quizContainer');
         container.innerHTML = currentQuiz.map((q, qIdx) => `
             <div style="margin-bottom:15px;">
-                <p style="font-weight:bold;">⚽ ${q.question}</p>
+                <p style="font-weight:bold;">⚽ ${qIdx + 1}. ${q.question}</p>
                 ${q.options.map((opt, oIdx) => `
                     <div class="option ${selectedAnswers[qIdx] === oIdx ? 'selected' : ''}" 
                          onclick="selectOption(${qIdx}, ${oIdx})">${opt}</div>
@@ -162,7 +211,6 @@
             
             alert(`🎉 Série terminée ! Score : ${data.correctCount}/${currentQuiz.length} (+${data.pointsEarned} pts). Place à la suite !`);
             
-            // Rechargement immédiat et automatique de nouvelles questions !
             btn.disabled = false;
             btn.textContent = "Valider et charger la suite";
             loadQuiz();
