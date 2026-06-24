@@ -1,4 +1,4 @@
-// server.js - Backend pour Foot Quiz Pi
+// server.js - Backend Foot Quiz Pi Premium
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
@@ -11,99 +11,65 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-const users = {}; 
-
+// BANQUE DE DONNÉES ÉTENDUE (Tu peux rajouter des centaines de lignes ici)
 const questionBank = [
-  { question: "Combien de joueurs sur un terrain de foot par équipe ?", options: ["10", "11", "12"], answer: 1 },
+  { question: "Combien de joueurs sur un terrain par équipe ?", options: ["10", "11", "12"], answer: 1 },
   { question: "Quel pays a gagné la Coupe du Monde 2022 ?", options: ["France", "Argentine", "Brésil"], answer: 1 },
-  { question: "Combien de minutes dure un match ?", options: ["80", "90", "100"], answer: 1 },
-  { question: "Quel club a le plus de Ligues des Champions ?", options: ["Real Madrid", "AC Milan", "Bayern Munich"], answer: 0 },
-  { question: "Quel joueur est surnommé 'la Pulga' ?", options: ["Messi", "Neymar", "Suárez"], answer: 0 }
+  { question: "Combien de minutes dure un match classique ?", options: ["80", "90", "100"], answer: 1 },
+  { question: "Quel club a le plus de Ligues des Champions ?", options: ["Real Madrid", "AC Milan", "Bayern"], answer: 0 },
+  { question: "Quel joueur est surnommé 'la Pulga' ?", options: ["Messi", "Neymar", "Suárez"], answer: 0 },
+  { question: "Quel pays a remporté l'Euro 2024 ?", options: ["Angleterre", "Espagne", "Allemagne"], answer: 1 },
+  { question: "Qui a le plus de buts en Ligue des Champions ?", options: ["Messi", "Ronaldo", "Benzema"], answer: 1 },
+  { question: "Quel club anglais est surnommé 'Les Blues' ?", options: ["Chelsea", "Man City", "Arsenal"], answer: 0 },
+  { question: "Dans quel club joue Erling Haaland en 2024 ?", options: ["Real", "PSG", "Man City"], answer: 2 },
+  { question: "Quelle est la durée d'une mi-temps ?", options: ["40 min", "45 min", "50 min"], answer: 1 },
+  { question: "Quel joueur a gagné le Ballon d'Or 2022 ?", options: ["Mbappé", "Benzema", "Neymar"], answer: 1 },
+  { question: "De quelle couleur est le carton d'expulsion ?", options: ["Jaune", "Vert", "Rouge"], answer: 2 },
+  { question: "Où se jouera la Coupe du Monde 2026 ?", options: ["Qatar", "USA/Canada/Mexique", "France"], answer: 1 },
+  { question: "Quel club est surnommé les Blaugranas ?", options: ["Real Madrid", "FC Barcelone", "Valence"], answer: 1 },
+  { question: "Quel pays a gagné la Coupe du Monde 2018 ?", options: ["Croatie", "Belgique", "France"], answer: 2 }
 ];
 
-function getTodaySeed() {
-  const today = new Date();
-  return today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
+// Fonction pour piocher 5 questions aléatoires différentes à chaque appel
+function getRandomQuestions(count = 5) {
+  const shuffled = [...questionBank].sort(() => 0.5 - Math.random());
+  return shuffled.slice(0, count);
 }
 
-function seededRandom(seed) {
-  let s = seed;
-  return function () {
-    s = (s * 9301 + 49297) % 233280;
-    return s / 233280;
-  };
-}
-
-function getDailyQuestions() {
-  const seed = getTodaySeed();
-  const rng = seededRandom(seed);
-  const pool = [...questionBank];
-  for (let i = pool.length - 1; i > 0; i--) {
-    const j = Math.floor(rng() * (i + 1));
-    [pool[i], pool[j]] = [pool[j], pool[i]];
-  }
-  return pool.slice(0, 5);
-}
-
-function getUser(username) {
-  if (!users[username]) {
-    users[username] = { points: 0, lastQuizDate: null, lastWheelDate: null, lastShootDate: null, streak: 0 };
-  }
-  return users[username];
-}
-
-function todayString() { return new Date().toISOString().slice(0, 10); }
-
-// --- ROUTES CORRIGÉES ---
+// --- ROUTES ---
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 
-// Route du Quiz (corrigée pour correspondre au front)
+// Distribue 5 questions aléatoires sans envoyer les réponses au client
 app.get('/api/quiz', (req, res) => {
-  const questions = getDailyQuestions().map(q => ({ question: q.question, options: q.options }));
-  res.json(questions);
+  const randomSet = getRandomQuestions(5);
+  // On cache l'index de la bonne réponse avant d'envoyer au Front
+  const clientQuestions = randomSet.map(q => ({
+    question: q.question,
+    options: q.options
+  }));
+  res.json(clientQuestions);
 });
 
+// Vérification des réponses reçues
 app.post('/api/quiz/submit', (req, res) => {
-  const { username, answers } = req.body;
-  const user = getUser(username);
-  const questions = getDailyQuestions();
-  let correct = 0;
-  answers.forEach((ans, i) => { if (ans === questions[i].answer) correct++; });
-  const points = correct * 10;
-  user.points += points;
-  user.lastQuizDate = todayString();
-  res.json({ correctCount: correct, pointsEarned: points });
+  const { answers, quizData } = req.body;
+  let correctCount = 0;
+
+  if (!answers || !quizData) {
+    return res.status(400).json({ error: "Données manquantes" });
+  }
+
+  // Vérification sécurisée en recroisant avec la banque globale
+  quizData.forEach((clientQ, index) => {
+    const originalQ = questionBank.find(q => q.question === clientQ.question);
+    if (originalQ && answers[index] === originalQ.answer) {
+      correctCount++;
+    }
+  });
+
+  const pointsEarned = correctCount * 10;
+  res.json({ correctCount, pointsEarned });
 });
 
-// Route Tirs au but (corrigée pour correspondre au front)
-app.post('/api/shoot', (req, res) => {
-  const { username, zone } = req.body;
-  const user = getUser(username);
-  const keeperZone = ['gauche', 'centre', 'droite'][Math.floor(Math.random() * 3)];
-  const goal = zone !== keeperZone;
-  const points = goal ? 20 : 0;
-  user.points += points;
-  user.lastShootDate = todayString();
-  res.json({ goal, pointsEarned: points });
-});
-
-app.post('/api/wheel/spin', (req, res) => {
-  const { username } = req.body;
-  const user = getUser(username);
-  const prize = 10;
-  user.points += prize;
-  res.json({ prize, index: 1 });
-});
-
-app.get('/api/user/:username', (req, res) => {
-  const user = getUser(req.params.username);
-  res.json({ points: user.points, streak: user.streak });
-});
-
-app.get('/api/leaderboard', (req, res) => {
-  const lb = Object.entries(users).map(([username, data]) => ({ username, points: data.points }));
-  res.json(lb.sort((a, b) => b.points - a.points));
-});
-
-app.listen(PORT, () => console.log(`Serveur actif sur port ${PORT}`));
+app.listen(PORT, () => console.log(`Serveur Premium actif sur le port ${PORT}`));
