@@ -141,6 +141,13 @@
   .option.correct { border-color: #4caf50; background: #16321c; }
   .option.wrong { border-color: var(--red); background: #3a1a16; }
 
+  .quiz-progress {
+    font-size: 0.75rem; color: var(--gold-dim); letter-spacing: 1px;
+    text-transform: uppercase; margin-bottom: 10px; font-weight: 700;
+  }
+  .quiz-nav { display: flex; justify-content: space-between; gap: 10px; margin-top: 8px; }
+  .quiz-nav button { width: auto; flex: 1; }
+
   /* ===== Roue ===== */
   .wheel-zone { text-align: center; }
   .wheel-wrap { position: relative; width: 220px; margin: 0 auto 18px; }
@@ -344,25 +351,55 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove('show'), 3000);
 }
 
-function showAd(callback) {
-  const overlay = document.createElement('div');
-  overlay.className = 'ad-overlay';
-  overlay.innerHTML = `
-    <div class="ad-box">
-      <p>📺 Publicité</p>
-      <div class="countdown" id="adCountdown">5</div>
-    </div>`;
-  document.body.appendChild(overlay);
-  let seconds = 5;
-  const interval = setInterval(() => {
-    seconds--;
-    document.getElementById('adCountdown').textContent = seconds;
-    if (seconds <= 0) {
-      clearInterval(interval);
-      document.body.removeChild(overlay);
-      callback();
+// ===== PUBS RÉCOMPENSÉES PI ADS (vraies pubs, génèrent des revenus) =====
+async function showRewardedAd() {
+  try {
+    if (typeof Pi === 'undefined' || !Pi.Ads) {
+      showToast("Pubs non disponibles ici, simulation...");
+      return new Promise(resolve => setTimeout(() => resolve(true), 2000));
     }
-  }, 1000);
+
+    const isAdReadyResponse = await Pi.Ads.isAdReady("rewarded");
+
+    if (isAdReadyResponse.ready === false) {
+      const requestAdResponse = await Pi.Ads.requestAd("rewarded");
+
+      if (requestAdResponse.result === "ADS_NOT_SUPPORTED") {
+        showToast("Mets à jour Pi Browser pour voir des pubs");
+        return false;
+      }
+      if (requestAdResponse.result !== "AD_LOADED") {
+        showToast("Pubs temporairement indisponibles, réessaie plus tard");
+        return false;
+      }
+    }
+
+    const showAdResponse = await Pi.Ads.showAd("rewarded");
+
+    if (showAdResponse.result === "AD_REWARDED") {
+      const adId = showAdResponse.adId;
+      // Vérification côté serveur que la pub a bien été regardée jusqu'au bout
+      const verifyRes = await fetch(`${API_BASE}/api/ads/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ adId })
+      });
+      const verifyData = await verifyRes.json();
+      if (verifyData.verified) {
+        return true;
+      } else {
+        showToast("Pub non confirmée, réessaie");
+        return false;
+      }
+    } else {
+      showToast("Pub non terminée, réessaie pour débloquer la roue");
+      return false;
+    }
+  } catch (err) {
+    console.error('Erreur pub:', err);
+    showToast("Erreur pub: " + (err && err.message ? err.message : "inconnue"));
+    return false;
+  }
 }
 
 // ===== CONSTRUCTION DE LA ROUE (SVG avec chiffres alignés) =====
@@ -539,48 +576,8 @@ async function refreshUserStatus() {
 }
 
 // ===== QUIZ =====
+let currentQuestionIndex = 0;
+
 async function loadQuiz() {
   try {
-    const res = await fetch(`${API_BASE}/api/quiz/today`);
-    if (!res.ok) throw new Error('réponse invalide');
-    const data = await res.json();
-    currentQuiz = data.questions;
-  } catch (e) {
-    console.error('loadQuiz a échoué', e);
-    showToast("Impossible de charger le quiz, réessaie");
-    return;
-  }
-  selectedAnswers = new Array(currentQuiz.length).fill(null);
-
-  const container = document.getElementById('quizContainer');
-  container.innerHTML = '';
-  currentQuiz.forEach((q, qi) => {
-    const div = document.createElement('div');
-    div.className = 'question';
-    div.innerHTML = `<p>${qi + 1}. ${q.question}</p>
-      <div class="options">
-        ${q.options.map((opt, oi) => `<div class="option" data-q="${qi}" data-o="${oi}">${opt}</div>`).join('')}
-      </div>`;
-    container.appendChild(div);
-  });
-
-  container.querySelectorAll('.option').forEach(el => {
-    el.addEventListener('click', () => {
-      const qi = parseInt(el.dataset.q);
-      const oi = parseInt(el.dataset.o);
-      selectedAnswers[qi] = oi;
-      container.querySelectorAll(`.option[data-q="${qi}"]`).forEach(o => o.classList.remove('selected'));
-      el.classList.add('selected');
-    });
-  });
-}
-
-document.getElementById('submitQuizBtn').addEventListener('click', async () => {
-  if (selectedAnswers.includes(null)) {
-    showToast("Réponds à toutes les questions !");
-    return;
-  }
-  const res = await fetch(`${API_BASE}/api/quiz/submit`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    
+    const res = await fetch(`${API_BASE}/api/quiz
