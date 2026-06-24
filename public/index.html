@@ -247,11 +247,35 @@ function showAd(callback) {
   }, 1000);
 }
 
+// ===== RÉVEIL DU SERVEUR (Render gratuit peut être endormi) =====
+async function wakeUpServer(maxAttempts = 8) {
+  for (let i = 0; i < maxAttempts; i++) {
+    try {
+      const res = await fetch(`${API_BASE}/api/health`);
+      if (res.ok) return true;
+    } catch (e) {
+      // serveur pas encore prêt, on réessaie
+    }
+    await new Promise(r => setTimeout(r, 2000));
+  }
+  return false;
+}
+
 // ===== CONNEXION PI =====
 document.getElementById('loginBtn').addEventListener('click', async () => {
   const btn = document.getElementById('loginBtn');
-  btn.textContent = "Connexion en cours...";
+  btn.textContent = "Réveil du serveur...";
   btn.disabled = true;
+
+  const awake = await wakeUpServer();
+  if (!awake) {
+    showToast("Le serveur ne répond pas, réessaie dans 30 secondes");
+    btn.textContent = "Se connecter avec Pi";
+    btn.disabled = false;
+    return;
+  }
+
+  btn.textContent = "Connexion en cours...";
   try {
     if (typeof Pi === 'undefined') {
       currentUsername = 'testuser_' + Math.floor(Math.random() * 1000);
@@ -293,25 +317,37 @@ async function onLoginSuccess() {
 }
 
 async function refreshUserStatus() {
-  const res = await fetch(`${API_BASE}/api/user/${currentUsername}`);
-  const data = await res.json();
-  document.getElementById('pointsDisplay').textContent = data.points;
+  try {
+    const res = await fetch(`${API_BASE}/api/user/${currentUsername}`);
+    if (!res.ok) throw new Error('réponse invalide');
+    const data = await res.json();
+    document.getElementById('pointsDisplay').textContent = data.points;
 
-  if (data.quizDoneToday) {
-    document.getElementById('submitQuizBtn').disabled = true;
-    document.getElementById('submitQuizBtn').textContent = "Quiz déjà fait aujourd'hui ✓";
-  }
-  if (data.wheelDoneToday) {
-    document.getElementById('spinBtn').disabled = true;
-    document.getElementById('spinBtn').textContent = "Roue déjà tournée ✓";
+    if (data.quizDoneToday) {
+      document.getElementById('submitQuizBtn').disabled = true;
+      document.getElementById('submitQuizBtn').textContent = "Quiz déjà fait aujourd'hui ✓";
+    }
+    if (data.wheelDoneToday) {
+      document.getElementById('spinBtn').disabled = true;
+      document.getElementById('spinBtn').textContent = "Roue déjà tournée ✓";
+    }
+  } catch (e) {
+    console.error('refreshUserStatus a échoué', e);
   }
 }
 
 // ===== QUIZ =====
 async function loadQuiz() {
-  const res = await fetch(`${API_BASE}/api/quiz/today`);
-  const data = await res.json();
-  currentQuiz = data.questions;
+  try {
+    const res = await fetch(`${API_BASE}/api/quiz/today`);
+    if (!res.ok) throw new Error('réponse invalide');
+    const data = await res.json();
+    currentQuiz = data.questions;
+  } catch (e) {
+    console.error('loadQuiz a échoué', e);
+    showToast("Impossible de charger le quiz, réessaie");
+    return;
+  }
   selectedAnswers = new Array(currentQuiz.length).fill(null);
 
   const container = document.getElementById('quizContainer');
@@ -388,12 +424,17 @@ document.getElementById('spinBtn').addEventListener('click', () => {
 
 // ===== CLASSEMENT =====
 async function loadLeaderboard() {
-  const res = await fetch(`${API_BASE}/api/leaderboard`);
-  const data = await res.json();
-  const list = document.getElementById('leaderboardList');
-  list.innerHTML = data.map((u, i) =>
-    `<li><span>${i + 1}. ${u.username}</span><span>${u.points} pts</span></li>`
-  ).join('') || '<li>Aucun joueur encore, sois le premier !</li>';
+  try {
+    const res = await fetch(`${API_BASE}/api/leaderboard`);
+    if (!res.ok) throw new Error('réponse invalide');
+    const data = await res.json();
+    const list = document.getElementById('leaderboardList');
+    list.innerHTML = data.map((u, i) =>
+      `<li><span>${i + 1}. ${u.username}</span><span>${u.points} pts</span></li>`
+    ).join('') || '<li>Aucun joueur encore, sois le premier !</li>';
+  } catch (e) {
+    console.error('loadLeaderboard a échoué', e);
+  }
 }
 </script>
 
