@@ -5,15 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Foot Quiz Pi</title>
 <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
     --pitch: #0d2818;
-    --pitch-dark: #071811;
+    --pitch-dark: #061309;
     --line: #1f4a30;
     --gold: #e8b84b;
+    --gold-bright: #ffd166;
     --gold-dim: #b88f2f;
     --white: #f3f6f1;
     --red: #c84b3a;
+    --sky: #7fd1ff;
   }
   * { box-sizing: border-box; }
   body {
@@ -22,40 +26,66 @@
     background-image:
       repeating-linear-gradient(0deg, var(--pitch) 0px, var(--pitch) 60px, var(--pitch-dark) 60px, var(--pitch-dark) 120px);
     color: var(--white);
-    font-family: 'Trebuchet MS', 'Segoe UI', sans-serif;
+    font-family: 'Inter', 'Segoe UI', sans-serif;
     min-height: 100vh;
     padding-bottom: 40px;
   }
+
   header {
+    position: relative;
     text-align: center;
-    padding: 28px 16px 18px;
+    padding: 36px 16px 22px;
     border-bottom: 3px solid var(--gold);
-    background: rgba(7,24,17,0.55);
+    background: rgba(6,19,9,0.6);
+    overflow: hidden;
   }
+  /* Signature : faisceaux de projecteurs de stade derrière le titre */
+  header::before, header::after {
+    content: "";
+    position: absolute;
+    top: -40px;
+    width: 260px;
+    height: 260px;
+    background: conic-gradient(from 200deg, rgba(255,209,102,0.22), transparent 40deg);
+    pointer-events: none;
+  }
+  header::before { left: -60px; transform: rotate(10deg); }
+  header::after { right: -60px; transform: scaleX(-1) rotate(10deg); }
+
   header h1 {
+    position: relative;
     margin: 0;
-    font-size: 1.9rem;
-    letter-spacing: 1px;
+    font-family: 'Oswald', sans-serif;
+    font-weight: 700;
+    font-size: 2.1rem;
+    letter-spacing: 1.5px;
     text-transform: uppercase;
-    color: var(--gold);
-    text-shadow: 0 2px 0 #000;
+    color: var(--gold-bright);
+    text-shadow: 0 2px 0 #000, 0 0 18px rgba(255,209,102,0.35);
   }
-  header p { margin: 6px 0 0; color: #b7c9bb; font-size: 0.85rem; }
+  header p { position: relative; margin: 8px 0 0; color: #b7c9bb; font-size: 0.85rem; letter-spacing: 0.5px; }
 
   .scoreboard {
     max-width: 420px;
     margin: 18px auto;
-    background: #08130c;
+    background: linear-gradient(180deg, #0a1c10, #060f08);
     border: 2px solid var(--gold-dim);
     border-radius: 10px;
-    padding: 14px 18px;
+    padding: 14px 14px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-variant-numeric: tabular-nums;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.03), 0 6px 18px rgba(0,0,0,0.4);
   }
-  .scoreboard .label { font-size: 0.7rem; letter-spacing: 1px; color: #93a796; text-transform: uppercase; }
-  .scoreboard .value { font-size: 1.6rem; color: var(--gold); font-weight: bold; }
+  .scoreboard > div { text-align: center; flex: 1; }
+  .scoreboard .label { font-size: 0.65rem; letter-spacing: 1.5px; color: #93a796; text-transform: uppercase; }
+  .scoreboard .value {
+    font-family: 'Oswald', sans-serif;
+    font-variant-numeric: tabular-nums;
+    font-size: 1.5rem;
+    color: var(--gold-bright);
+    font-weight: 600;
+  }
 
   main { max-width: 420px; margin: 0 auto; padding: 0 16px; }
 
@@ -65,11 +95,15 @@
     border-radius: 12px;
     padding: 18px;
     margin-bottom: 18px;
+    transition: border-color 0.2s ease;
   }
   .card h2 {
     margin: 0 0 12px;
-    font-size: 1.1rem;
-    color: var(--gold);
+    font-family: 'Oswald', sans-serif;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    font-size: 1.15rem;
+    color: var(--gold-bright);
     display: flex;
     align-items: center;
     gap: 8px;
@@ -77,29 +111,29 @@
   .card p.desc { color: #aebcab; font-size: 0.85rem; margin-top: -4px; margin-bottom: 14px;}
 
   button {
-    font-family: inherit;
+    font-family: 'Inter', sans-serif;
     border: none;
     border-radius: 8px;
-    padding: 12px 16px;
+    padding: 13px 16px;
     font-size: 0.95rem;
-    font-weight: bold;
+    font-weight: 700;
     cursor: pointer;
     width: 100%;
-    transition: transform 0.1s ease;
+    transition: transform 0.1s ease, filter 0.15s ease;
   }
   button:active { transform: scale(0.97); }
-  .btn-primary { background: var(--gold); color: #1a1a1a; }
-  .btn-primary:disabled { background: #4a4a40; color: #888; cursor: not-allowed; }
+  .btn-primary { background: linear-gradient(180deg, var(--gold-bright), var(--gold-dim)); color: #1a1208; }
+  .btn-primary:disabled { background: #44483f; color: #8a8f83; cursor: not-allowed; }
   .btn-ghost { background: transparent; border: 1px solid var(--gold-dim); color: var(--gold); margin-top: 8px; }
 
   .question { margin-bottom: 14px; }
-  .question p { margin: 0 0 8px; font-weight: bold; font-size: 0.92rem; }
+  .question p { margin: 0 0 8px; font-weight: 700; font-size: 0.92rem; }
   .options { display: flex; flex-direction: column; gap: 6px; }
   .option {
     background: #11241a;
     border: 1px solid var(--line);
     border-radius: 6px;
-    padding: 9px 12px;
+    padding: 10px 12px;
     font-size: 0.88rem;
     cursor: pointer;
   }
@@ -107,42 +141,73 @@
   .option.correct { border-color: #4caf50; background: #16321c; }
   .option.wrong { border-color: var(--red); background: #3a1a16; }
 
+  /* ===== Roue ===== */
   .wheel-zone { text-align: center; }
-  .wheel {
-    width: 160px; height: 160px;
-    margin: 0 auto 16px;
-    border-radius: 50%;
-    border: 6px solid var(--gold);
-    background: conic-gradient(
-      #c84b3a 0deg 51deg, #1d3322 51deg 102deg, #c84b3a 102deg 154deg,
-      #1d3322 154deg 205deg, #c84b3a 205deg 257deg, #1d3322 257deg 308deg, #b88f2f 308deg 360deg);
-    position: relative;
-    transition: transform 3s cubic-bezier(0.2, 0.8, 0.2, 1);
-  }
-  .wheel::after {
-    content: "▼";
-    position: absolute;
-    top: -18px; left: 50%;
+  .wheel-wrap { position: relative; width: 220px; margin: 0 auto 18px; }
+  .wheel-wrap svg { display: block; filter: drop-shadow(0 6px 14px rgba(0,0,0,0.5)); }
+  .wheel-pointer {
+    position: absolute; top: -10px; left: 50%;
     transform: translateX(-50%);
-    color: var(--gold);
-    font-size: 1.2rem;
+    width: 0; height: 0;
+    border-left: 11px solid transparent;
+    border-right: 11px solid transparent;
+    border-top: 18px solid var(--gold-bright);
+    filter: drop-shadow(0 2px 2px rgba(0,0,0,0.5));
+    z-index: 2;
   }
+  #wheelSvg { transition: transform 3.2s cubic-bezier(0.15, 0.85, 0.2, 1); }
+
+  /* ===== Mini-jeu tirs au but ===== */
+  .goal-wrap {
+    background: linear-gradient(180deg, #0e2a1a, #0a1f12);
+    border: 2px solid var(--line);
+    border-radius: 10px;
+    padding: 18px 12px 10px;
+    margin-bottom: 14px;
+    text-align: center;
+  }
+  .goal-frame {
+    border: 4px solid var(--white);
+    border-bottom: none;
+    height: 90px;
+    margin: 0 auto 14px;
+    max-width: 280px;
+    background: repeating-linear-gradient(90deg, rgba(255,255,255,0.05) 0 1px, transparent 1px 14px);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    font-size: 2.2rem;
+    position: relative;
+  }
+  .ball-emoji { transition: transform 0.5s ease; }
+  .zone-buttons { display: flex; gap: 8px; max-width: 280px; margin: 0 auto; }
+  .zone-buttons button {
+    background: #1d3322; border: 1px solid var(--gold-dim); color: var(--white);
+    font-size: 0.85rem; padding: 11px 6px;
+  }
+  .zone-buttons button:disabled { opacity: 0.5; }
+  .zone-buttons button.chosen { background: var(--gold); color: #1a1208; }
 
   .leaderboard-list { list-style: none; padding: 0; margin: 0; }
   .leaderboard-list li {
     display: flex; justify-content: space-between;
-    padding: 8px 0; border-bottom: 1px solid var(--line);
-    font-size: 0.88rem;
+    padding: 9px 0; border-bottom: 1px solid var(--line);
+    font-size: 0.9rem;
   }
-  .leaderboard-list li:first-child { color: var(--gold); font-weight: bold; }
+  .leaderboard-list li:nth-child(1) { color: var(--gold-bright); font-weight: 700; font-size: 0.98rem; }
+  .leaderboard-list li:nth-child(2) { color: #d9d9d9; font-weight: 600; }
+  .leaderboard-list li:nth-child(3) { color: #d8a86a; font-weight: 600; }
 
   .toast {
     position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-    background: var(--gold); color: #1a1a1a; padding: 10px 18px;
-    border-radius: 8px; font-weight: bold; font-size: 0.85rem;
+    background: var(--gold-bright); color: #1a1208; padding: 11px 18px;
+    border-radius: 8px; font-weight: 700; font-size: 0.85rem;
     box-shadow: 0 4px 14px rgba(0,0,0,0.4);
     opacity: 0; transition: opacity 0.3s;
     pointer-events: none;
+    max-width: 90%;
+    text-align: center;
+    z-index: 1000;
   }
   .toast.show { opacity: 1; }
 
@@ -155,7 +220,7 @@
     background: #111; border: 2px dashed var(--gold);
     padding: 40px 30px; border-radius: 10px; text-align: center;
   }
-  .ad-overlay p { margin: 0 0 10px; color: var(--gold); font-weight: bold; }
+  .ad-overlay p { margin: 0 0 10px; color: var(--gold); font-weight: 700; }
   .ad-overlay .countdown { font-size: 2rem; color: white; }
 </style>
 </head>
@@ -163,13 +228,17 @@
 
 <header>
   <h1>⚽ Foot Quiz Pi</h1>
-  <p>Quiz du jour • Roue de la chance • Classement</p>
+  <p>Quiz du jour • Roue de la chance • Tirs au but • Classement</p>
 </header>
 
 <div class="scoreboard">
   <div>
     <div class="label">Joueur</div>
-    <div class="value" id="usernameDisplay" style="font-size:1.1rem;">—</div>
+    <div class="value" id="usernameDisplay" style="font-size:1.05rem;">—</div>
+  </div>
+  <div>
+    <div class="label">Série 🔥</div>
+    <div class="value" id="streakDisplay">0</div>
   </div>
   <div>
     <div class="label">Points</div>
@@ -200,8 +269,26 @@
 
   <div class="card wheel-zone" id="wheelCard" style="display:none;">
     <h2 style="justify-content:center;">🎡 Roue quotidienne</h2>
-    <div class="wheel" id="wheel"></div>
+    <div class="wheel-wrap">
+      <div class="wheel-pointer"></div>
+      <svg id="wheelSvg" width="220" height="220" viewBox="0 0 100 100"></svg>
+    </div>
     <button class="btn-primary" id="spinBtn">Regarder une pub et tourner</button>
+  </div>
+
+  <div class="card" id="shootCard" style="display:none;">
+    <h2>🥅 Tirs au but</h2>
+    <p class="desc">Choisis ta zone de tir. Si le gardien ne devine pas, tu marques entre 10 et 30 points !</p>
+    <div class="goal-wrap">
+      <div class="goal-frame">
+        <span class="ball-emoji" id="ballEmoji">⚽</span>
+      </div>
+      <div class="zone-buttons">
+        <button id="zoneGauche" data-zone="gauche">⬅️ Gauche</button>
+        <button id="zoneCentre" data-zone="centre">⬆️ Centre</button>
+        <button id="zoneDroite" data-zone="droite">➡️ Droite</button>
+      </div>
+    </div>
   </div>
 
   <div class="card" id="leaderboardCard" style="display:none;">
@@ -237,7 +324,11 @@ let currentUsername = null;
 let currentQuiz = [];
 let selectedAnswers = [];
 
-// Initialise le SDK Pi dès le chargement de la page (obligatoire avant tout autre appel)
+// Doit correspondre exactement à la logique du serveur (server.js)
+const WHEEL_PRIZES = [5, 10, 15, 20, 25, 50, 100];
+const WHEEL_WEIGHTS = [25, 25, 20, 15, 10, 4, 1];
+const WHEEL_COLORS = ['#1d3322', '#234027', '#2c4f30', '#3a5c33', '#b88f2f', '#e8b84b', '#c84b3a'];
+
 try {
   if (typeof Pi !== 'undefined') {
     Pi.init({ version: "2.0", sandbox: true }); // sandbox: true = mode Testnet
@@ -250,7 +341,7 @@ function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2500);
+  setTimeout(() => t.classList.remove('show'), 3000);
 }
 
 function showAd(callback) {
@@ -274,6 +365,41 @@ function showAd(callback) {
   }, 1000);
 }
 
+// ===== CONSTRUCTION DE LA ROUE (SVG avec chiffres alignés) =====
+function buildWheelSegments() {
+  const total = WHEEL_WEIGHTS.reduce((a, b) => a + b, 0);
+  let acc = 0;
+  return WHEEL_WEIGHTS.map((w, i) => {
+    const start = acc;
+    const sweep = (w / total) * 360;
+    acc += sweep;
+    return { start, end: acc, mid: start + sweep / 2, prize: WHEEL_PRIZES[i], color: WHEEL_COLORS[i] };
+  });
+}
+const wheelSegments = buildWheelSegments();
+
+function polarPoint(angleDeg, radius) {
+  // angle 0 = haut (12h), sens horaire
+  const rad = (angleDeg - 90) * Math.PI / 180;
+  return { x: 50 + radius * Math.cos(rad), y: 50 + radius * Math.sin(rad) };
+}
+
+function renderWheel() {
+  const svg = document.getElementById('wheelSvg');
+  const R = 48;
+  let html = `<circle cx="50" cy="50" r="49" fill="#061309" stroke="#e8b84b" stroke-width="2"/>`;
+  wheelSegments.forEach(seg => {
+    const p1 = polarPoint(seg.start, R);
+    const p2 = polarPoint(seg.end, R);
+    const largeArc = (seg.end - seg.start) > 180 ? 1 : 0;
+    html += `<path d="M50,50 L${p1.x.toFixed(2)},${p1.y.toFixed(2)} A${R},${R} 0 ${largeArc} 1 ${p2.x.toFixed(2)},${p2.y.toFixed(2)} Z" fill="${seg.color}" stroke="#061309" stroke-width="0.6"/>`;
+    const tp = polarPoint(seg.mid, R * 0.66);
+    html += `<text x="${tp.x.toFixed(2)}" y="${tp.y.toFixed(2)}" fill="${seg.prize >= 50 ? '#1a1208' : '#f3f6f1'}" font-size="7" font-weight="700" font-family="Oswald, sans-serif" text-anchor="middle" dominant-baseline="middle">${seg.prize}</text>`;
+  });
+  svg.innerHTML = html;
+}
+renderWheel();
+
 // ===== RÉVEIL DU SERVEUR (Render gratuit peut être endormi) =====
 async function wakeUpServer(maxAttempts = 30) {
   const btn = document.getElementById('loginBtn');
@@ -281,9 +407,7 @@ async function wakeUpServer(maxAttempts = 30) {
     try {
       const res = await fetch(`${API_BASE}/api/health`);
       if (res.ok) return true;
-    } catch (e) {
-      // serveur pas encore prêt, on réessaie
-    }
+    } catch (e) {}
     if (btn) btn.textContent = `Réveil du serveur... (${i * 2}s)`;
     await new Promise(r => setTimeout(r, 2000));
   }
@@ -330,12 +454,11 @@ document.getElementById('loginBtn').addEventListener('click', async () => {
   }
 });
 
-// ===== TEST DE PAIEMENT (pour validation Pi Developer) =====
+// ===== TEST DE PAIEMENT =====
 document.getElementById('testPaymentBtn').addEventListener('click', () => {
   const btn = document.getElementById('testPaymentBtn');
   btn.disabled = true;
   btn.textContent = "Paiement en cours...";
-
   try {
     Pi.createPayment({
       amount: 0.01,
@@ -344,35 +467,31 @@ document.getElementById('testPaymentBtn').addEventListener('click', () => {
     }, {
       onReadyForServerApproval: async (paymentId) => {
         await fetch(`${API_BASE}/api/pi/approve`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ paymentId })
         });
       },
       onReadyForServerCompletion: async (paymentId, txid) => {
         await fetch(`${API_BASE}/api/pi/complete`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ paymentId, txid })
         });
         showToast("Paiement test réussi !");
         btn.textContent = "Paiement effectué ✓";
       },
-      onCancel: (paymentId) => {
+      onCancel: () => {
         showToast("Paiement annulé");
         btn.disabled = false;
         btn.textContent = "Payer 0.01 Pi (test)";
       },
-      onError: (error, payment) => {
+      onError: (error) => {
         showToast("Erreur paiement: " + (error && error.message ? error.message : "inconnue"));
-        console.error(error);
         btn.disabled = false;
         btn.textContent = "Payer 0.01 Pi (test)";
       }
     });
   } catch (err) {
     showToast("Erreur paiement: " + (err && err.message ? err.message : "inconnue"));
-    console.error(err);
     btn.disabled = false;
     btn.textContent = "Payer 0.01 Pi (test)";
   }
@@ -387,6 +506,7 @@ async function onLoginSuccess() {
   document.getElementById('testPaymentCard').style.display = 'block';
   document.getElementById('quizCard').style.display = 'block';
   document.getElementById('wheelCard').style.display = 'block';
+  document.getElementById('shootCard').style.display = 'block';
   document.getElementById('leaderboardCard').style.display = 'block';
   document.getElementById('usernameDisplay').textContent = currentUsername;
   await refreshUserStatus();
@@ -400,6 +520,7 @@ async function refreshUserStatus() {
     if (!res.ok) throw new Error('réponse invalide');
     const data = await res.json();
     document.getElementById('pointsDisplay').textContent = data.points;
+    document.getElementById('streakDisplay').textContent = data.streak || 0;
 
     if (data.quizDoneToday) {
       document.getElementById('submitQuizBtn').disabled = true;
@@ -408,6 +529,9 @@ async function refreshUserStatus() {
     if (data.wheelDoneToday) {
       document.getElementById('spinBtn').disabled = true;
       document.getElementById('spinBtn').textContent = "Roue déjà tournée ✓";
+    }
+    if (data.shootDoneToday) {
+      document.querySelectorAll('.zone-buttons button').forEach(b => b.disabled = true);
     }
   } catch (e) {
     console.error('refreshUserStatus a échoué', e);
@@ -459,62 +583,4 @@ document.getElementById('submitQuizBtn').addEventListener('click', async () => {
   const res = await fetch(`${API_BASE}/api/quiz/submit`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: currentUsername, answers: selectedAnswers })
-  });
-  const data = await res.json();
-  if (data.error) {
-    showToast(data.error);
-    return;
-  }
-  showToast(`${data.correct}/${data.total} bonnes réponses, +${data.pointsEarned} points !`);
-  document.getElementById('pointsDisplay').textContent = data.totalPoints;
-  document.getElementById('submitQuizBtn').disabled = true;
-  document.getElementById('submitQuizBtn').textContent = "Quiz déjà fait aujourd'hui ✓";
-  await loadLeaderboard();
-});
-
-// ===== ROUE =====
-document.getElementById('spinBtn').addEventListener('click', () => {
-  showAd(async () => {
-    const res = await fetch(`${API_BASE}/api/wheel/spin`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: currentUsername })
-    });
-    const data = await res.json();
-    if (data.error) {
-      showToast(data.error);
-      return;
-    }
-    const wheel = document.getElementById('wheel');
-    const targetDeg = 1440 + (data.prizeIndex * 51) + 25;
-    wheel.style.transform = `rotate(${targetDeg}deg)`;
-
-    setTimeout(() => {
-      showToast(`Tu as gagné ${data.prize} points !`);
-      document.getElementById('pointsDisplay').textContent = data.totalPoints;
-      document.getElementById('spinBtn').disabled = true;
-      document.getElementById('spinBtn').textContent = "Roue déjà tournée ✓";
-      loadLeaderboard();
-    }, 3100);
-  });
-});
-
-// ===== CLASSEMENT =====
-async function loadLeaderboard() {
-  try {
-    const res = await fetch(`${API_BASE}/api/leaderboard`);
-    if (!res.ok) throw new Error('réponse invalide');
-    const data = await res.json();
-    const list = document.getElementById('leaderboardList');
-    list.innerHTML = data.map((u, i) =>
-      `<li><span>${i + 1}. ${u.username}</span><span>${u.points} pts</span></li>`
-    ).join('') || '<li>Aucun joueur encore, sois le premier !</li>';
-  } catch (e) {
-    console.error('loadLeaderboard a échoué', e);
-  }
-}
-</script>
-
-</body>
-</html>
+    
