@@ -40,13 +40,27 @@ function getDailyQuestions() {
 
 function getUser(username) {
   if (!users[username]) {
-    users[username] = { points: 0, lastQuizDate: null, lastWheelDate: null };
+    users[username] = { points: 0, lastQuizDate: null, lastWheelDate: null, lastShootDate: null, streak: 0 };
   }
   return users[username];
 }
 
 function todayString() {
   return new Date().toISOString().slice(0, 10);
+}
+
+function yesterdayString() {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return d.toISOString().slice(0, 10);
+}
+
+function getStreakBonus(streak) {
+  if (streak >= 30) return 100;
+  if (streak >= 14) return 50;
+  if (streak >= 7) return 30;
+  if (streak >= 3) return 10;
+  return 0;
 }
 
 // ===== ROUTES =====
@@ -74,9 +88,17 @@ app.post('/api/quiz/submit', (req, res) => {
 
   const user = getUser(username);
   const today = todayString();
+  const yesterday = yesterdayString();
 
   if (user.lastQuizDate === today) {
     return res.status(400).json({ error: 'Quiz déjà fait aujourd\'hui, reviens demain !' });
+  }
+
+  // Calcul du streak : continue si joué hier, repart à 1 sinon
+  if (user.lastQuizDate === yesterday) {
+    user.streak += 1;
+  } else {
+    user.streak = 1;
   }
 
   const questions = getDailyQuestions();
@@ -86,13 +108,16 @@ app.post('/api/quiz/submit', (req, res) => {
   });
 
   const pointsEarned = correct * 10;
-  user.points += pointsEarned;
+  const streakBonus = getStreakBonus(user.streak);
+  user.points += pointsEarned + streakBonus;
   user.lastQuizDate = today;
 
   res.json({
     correct,
     total: questions.length,
     pointsEarned,
+    streak: user.streak,
+    streakBonus,
     totalPoints: user.points
   });
 });
@@ -131,12 +156,78 @@ app.get('/api/user/:username', (req, res) => {
   const today = todayString();
   res.json({
     points: user.points,
+    streak: user.streak,
     quizDoneToday: user.lastQuizDate === today,
-    wheelDoneToday: user.lastWheelDate === today
+    wheelDoneToday: user.lastWheelDate === today,
+    shootDoneToday: user.lastShootDate === today
   });
 });
 
-// Classement (top 20)
+// Mini-jeu : tirs au but (1x par jour)
+app.post('/api/minigame/shoot', (req, res) => {
+  const { username, zone } = req.body;
+  const validZones = ['gauche', 'centre', 'droite'];
+  if (!username || !validZones.includes(zone)) {
+    return res.status(400).json({ error: 'zone invalide' });
+  }
+
+  const user = getUser(username);
+  const today = todayString();
+
+  if (user.lastShootDate === today) {
+    return res.status(400).json({ error: 'Tir déjà tenté aujourd\'hui, reviens demain !' });
+  }
+
+  // Le gardien plonge plus souvent au centre, comme dans la vraie vie
+  const keeperWeights = { gauche: 35, centre: 30, droite: 35 };
+  let rand = Math.random() * 100;
+  let keeperZone = 'centre';
+  if (rand < keeperWeights.gauche) keeperZone = 'gauche';
+  else if (rand < keeperWeights.gauche + keeperWeights.centre) keeperZone = 'centre';
+  else keeperZone = 'droite';
+
+  const goal = zone !== keeperZone;
+  const pointsEarned = goal ? Math.floor(Math.random() * 21) + 10 : 0; // 10 à 30 points
+
+  user.lastShootDate = today;
+  user.points += pointsEarned;
+
+  res.json({ goal, keeperZone, pointsEarned, totalPoints: user.points });
+});
+
+// Tirs au but : mini-jeu, 1x par jour
+app.post('/api/minigame/shoot', (req, res) => {
+  const { username, zone } = req.body;
+  if (!username || !['gauche', 'centre', 'droite'].includes(zone)) {
+    return res.status(400).json({ error: 'zone invalide' });
+  }
+
+  const user = getUser(username);
+  const today = todayString();
+
+  if (user.lastShootDate === today) {
+    return res.status(400).json({ error: 'Tir déjà fait aujourd\'hui, reviens demain !' });
+  }
+
+  const zones = ['gauche', 'centre', 'droite'];
+  const weights = [35, 30, 35]; // le gardien plonge un peu plus souvent sur les côtés
+  let rand = Math.random() * 100;
+  let keeperZone = zones[0];
+  for (let i = 0; i < zones.length; i++) {
+    if (rand < weights[i]) { keeperZone = zones[i]; break; }
+    rand -= weights[i];
+  }
+
+  const isGoal = zone !== keeperZone;
+  const points = isGoal ? Math.floor(Math.random() * 21) + 10 : 0; // 10 à 30 points si but
+
+  user.lastShootDate = today;
+  if (isGoal) user.points += points;
+
+  res.json({ goal: isGoal, keeperZone, points, totalPoints: user.points });
+});
+
+// Pi Network
 app.get('/api/leaderboard', (req, res) => {
   const leaderboard = Object.entries(users)
     .map(([username, data]) => ({ username, points: data.points }))
