@@ -1,192 +1,97 @@
-// ===== QUIZ =====
-let currentQuestionIndex = 0;
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Foot Quiz Pi</title>
+    <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --pitch: #0d2818; --gold: #e8b84b; --white: #f3f6f1; }
+        body { background: #061309; color: var(--white); font-family: 'Inter', sans-serif; margin: 0; padding: 20px; }
+        .card { background: rgba(255,255,255,0.05); border: 1px solid #1f4a30; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+        button { background: var(--gold); border: none; padding: 12px; width: 100%; border-radius: 8px; font-weight: 700; cursor: pointer; }
+        .option { background: #11241a; border: 1px solid #1f4a30; padding: 10px; margin: 5px 0; cursor: pointer; border-radius: 6px; }
+        .option.selected { border-color: var(--gold); }
+    </style>
+</head>
+<body>
 
-async function loadQuiz() {
-  try {
-    const res = await fetch(`${API_BASE}/api/quiz`);
-    if (!res.ok) throw new Error("Impossible de charger le quiz");
-    currentQuiz = await res.json();
-    selectedAnswers = new Array(currentQuiz.length).fill(null);
-    renderQuiz();
-  } catch (e) {
-    console.error("Erreur quiz:", e);
-    document.getElementById('quizContainer').innerHTML = "<p style='color:var(--red);'>Erreur de chargement du quiz du jour.</p>";
-  }
-}
+<header style="text-align:center;">
+    <h1>⚽ Foot Quiz Pi</h1>
+</header>
 
-function renderQuiz() {
-  const container = document.getElementById('quizContainer');
-  if (!currentQuiz || currentQuiz.length === 0) {
-    container.innerHTML = "<p>Aucun quiz disponible aujourd'hui.</p>";
-    return;
-  }
+<main>
+    <div class="card" id="loginCard">
+        <h2>Connexion</h2>
+        <button id="loginBtn">Se connecter avec Pi</button>
+    </div>
 
-  let html = "";
-  currentQuiz.forEach((q, qIdx) => {
-    html += `
-      <div class="question" style="margin-bottom: 20px;">
-        <div class="quiz-progress">Question ${qIdx + 1} / ${currentQuiz.length}</div>
-        <p>${q.question}</p>
-        <div class="options">
-    `;
-    q.options.forEach((opt, oIdx) => {
-      const isSelected = selectedAnswers[qIdx] === oIdx ? 'selected' : '';
-      html += `<div class="option ${isSelected}" onclick="selectOption(${qIdx}, ${oIdx})">${opt}</div>`;
-    });
-    html += `</div></div>`;
-  });
-  container.innerHTML = html;
-}
+    <div class="card" id="quizCard" style="display:none;">
+        <h2>Quiz du jour</h2>
+        <div id="quizContainer"></div>
+        <button id="submitQuizBtn" style="margin-top:10px;">Valider</button>
+    </div>
+</main>
 
-window.selectOption = function(qIdx, oIdx) {
-  // Si le quiz est déjà validé, on ne peut plus changer
-  if (document.getElementById('submitQuizBtn').disabled) return;
-  
-  selectedAnswers[qIdx] = oIdx;
-  renderQuiz();
-};
+<div id="toast" style="position:fixed; bottom:20px; background:var(--gold); color:#000; padding:10px; border-radius:5px; display:none;"></div>
 
-document.getElementById('submitQuizBtn').addEventListener('click', async () => {
-  if (selectedAnswers.includes(null)) {
-    showToast("Réponds à toutes les questions avant de valider !");
-    return;
-  }
+<script>
+    const API_BASE = "https://foot-quiz-pi.onrender.com";
+    let currentQuiz = [];
+    let selectedAnswers = [];
 
-  const btn = document.getElementById('submitQuizBtn');
-  btn.disabled = true;
-  btn.textContent = "Validation...";
+    // Initialisation Pi
+    if (typeof Pi !== 'undefined') Pi.init({ version: "2.0", sandbox: true });
 
-  try {
-    const res = await fetch(`${API_BASE}/api/quiz/submit`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: currentUsername, answers: selectedAnswers })
-    });
-    const data = await res.json();
-    
-    showToast(`Quiz terminé ! Bonnes réponses : ${data.correctCount}/${currentQuiz.length} (+${data.pointsEarned} pts)`);
-    await refreshUserStatus();
-  } catch (e) {
-    console.error(e);
-    showToast("Erreur lors de la validation du quiz");
-    btn.disabled = false;
-    btn.textContent = "Valider mes réponses";
-  }
-});
-
-// ===== LOGIQUE DE LA ROUE =====
-let isSpinning = false;
-document.getElementById('spinBtn').addEventListener('click', async () => {
-  if (isSpinning) return;
-
-  // Lancement de la vraie publicité Pi Ads avant de tourner
-  const adWatched = await showRewardedAd();
-  if (!adWatched) return; // Si la pub est coupée ou échoue, on arrête
-
-  const btn = document.getElementById('spinBtn');
-  btn.disabled = true;
-  isSpinning = true;
-
-  try {
-    const res = await fetch(`${API_BASE}/api/wheel/spin`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: currentUsername })
-    });
-    if (!res.ok) throw new Error("Erreur serveur pour la roue");
-    const data = await res.json(); // Reçoit l'index du gain calculé de manière sécurisée côté serveur
-
-    // Calcul de l'angle pour aligner le segment gagnant sous le pointeur du haut
-    const seg = wheelSegments[data.index];
-    const targetAngle = 360 - seg.mid; 
-    const totalRotation = 360 * 5 + targetAngle; // 5 tours complets + l'angle cible
-
-    const wheelSvg = document.getElementById('wheelSvg');
-    wheelSvg.style.transform = `rotate(${totalRotation}deg)`;
-
-    setTimeout(async () => {
-      showToast(`Félicitations ! Tu as gagné ${data.prize} points !`);
-      isSpinning = false;
-      await refreshUserStatus();
-    }, 3200);
-
-  } catch (e) {
-    console.error(e);
-    showToast("Erreur avec la roue");
-    btn.disabled = false;
-    isSpinning = false;
-  }
-});
-
-// ===== TIRS AU BUT =====
-document.querySelectorAll('.zone-buttons button').forEach(button => {
-  button.addEventListener('click', async (e) => {
-    const zone = e.target.getAttribute('data-zone');
-    
-    // Désactiver temporairement les boutons
-    document.querySelectorAll('.zone-buttons button').forEach(b => b.disabled = true);
-    e.target.classList.add('chosen');
-
-    const ball = document.getElementById('ballEmoji');
-    // Animation de la balle
-    if (zone === 'gauche') ball.style.transform = 'translate(-80px, -60px) scale(0.6)';
-    if (zone === 'centre') ball.style.transform = 'translate(0px, -70px) scale(0.6)';
-    if (zone === 'droite') ball.style.transform = 'translate(80px, -60px) scale(0.6)';
-
-    try {
-      const res = await fetch(`${API_BASE}/api/shoot`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: currentUsername, zone })
-      });
-      const data = await res.json();
-
-      setTimeout(async () => {
-        if (data.goal) {
-          showToast(`⚽ BUT !! Le gardien a plongé du mauvais côté. +${data.pointsEarned} points !`);
-        } else {
-          showToast(`🧤 ARRÊT ! Le gardien l'a arrêtée... 0 point.`);
-        }
-        // Reset l'animation de la balle après affichage du résultat
-        setTimeout(() => { ball.style.transform = 'none'; }, 2000);
-        await refreshUserStatus();
-      }, 600);
-
-    } catch (e) {
-      console.error(e);
-      showToast("Erreur lors du tir au but");
-      document.querySelectorAll('.zone-buttons button').forEach(b => b.disabled = false);
-      e.target.classList.remove('chosen');
-      ball.style.transform = 'none';
-    }
-  });
-});
-
-// ===== CLASSEMENT =====
-async function loadLeaderboard() {
-  try {
-    const res = await fetch(`${API_BASE}/api/leaderboard`);
-    if (!res.ok) throw new Error("Impossible de charger le classement");
-    const list = await res.json();
-    const container = document.getElementById('leaderboardList');
-    
-    if (list.length === 0) {
-      container.innerHTML = "<li>Aucun joueur enregistré pour le moment.</li>";
-      return;
+    async function loadQuiz() {
+        try {
+            const res = await fetch(`${API_BASE}/api/quiz`);
+            currentQuiz = await res.json();
+            selectedAnswers = new Array(currentQuiz.length).fill(null);
+            renderQuiz();
+        } catch (e) { document.getElementById('quizContainer').innerHTML = "Erreur chargement quiz."; }
     }
 
-    container.innerHTML = list.map((user, idx) => `
-      <li>
-        <span>${idx + 1}. @${user.username}</span>
-        <span style="font-family:'Oswald',sans-serif; color:var(--gold-bright);">${user.points} pts</span>
-      </li>
-    `).join('');
-  } catch (e) {
-    console.error(e);
-    document.getElementById('leaderboardList').innerHTML = "<li>Erreur de chargement du classement.</li>";
-  }
-}
+    function renderQuiz() {
+        const container = document.getElementById('quizContainer');
+        container.innerHTML = currentQuiz.map((q, qIdx) => `
+            <div>
+                <p>${q.question}</p>
+                ${q.options.map((opt, oIdx) => `
+                    <div class="option ${selectedAnswers[qIdx] === oIdx ? 'selected' : ''}" 
+                         onclick="selectOption(${qIdx}, ${oIdx})">${opt}</div>
+                `).join('')}
+            </div>
+        `).join('');
+    }
+
+    window.selectOption = (qIdx, oIdx) => {
+        selectedAnswers[qIdx] = oIdx;
+        renderQuiz();
+    };
+
+    document.getElementById('loginBtn').addEventListener('click', async () => {
+        try {
+            const auth = await Pi.authenticate(['username'], () => {});
+            document.getElementById('loginCard').style.display = 'none';
+            document.getElementById('quizCard').style.display = 'block';
+            loadQuiz();
+        } catch (e) { alert("Erreur connexion"); }
+    });
+
+    document.getElementById('submitQuizBtn').addEventListener('click', async () => {
+        const res = await fetch(`${API_BASE}/api/quiz/submit`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: "user_test", answers: selectedAnswers })
+        });
+        const data = await res.json();
+        alert("Quiz terminé ! Points : " + data.pointsEarned);
+    });
 </script>
+
 </body>
 </html>
+
 
