@@ -185,6 +185,12 @@
     <button class="btn-primary" id="loginBtn">Se connecter avec Pi</button>
   </div>
 
+  <div class="card" id="testPaymentCard" style="display:none;">
+    <h2>💳 Test de paiement</h2>
+    <p class="desc">Effectue un petit paiement test (0.01 Pi) pour valider la configuration de ton app.</p>
+    <button class="btn-primary" id="testPaymentBtn">Payer 0.01 Pi (test)</button>
+  </div>
+
   <div class="card" id="quizCard" style="display:none;">
     <h2>🧠 Quiz du jour</h2>
     <p class="desc">5 questions, 10 points par bonne réponse.</p>
@@ -324,12 +330,56 @@ document.getElementById('loginBtn').addEventListener('click', async () => {
   }
 });
 
+// ===== TEST DE PAIEMENT (pour validation Pi Developer) =====
+document.getElementById('testPaymentBtn').addEventListener('click', () => {
+  const btn = document.getElementById('testPaymentBtn');
+  btn.disabled = true;
+  btn.textContent = "Paiement en cours...";
+
+  Pi.createPayment({
+    amount: 0.01,
+    memo: "Test de paiement Foot Quiz Pi",
+    metadata: { type: "test_payment" }
+  }, {
+    onReadyForServerApproval: async (paymentId) => {
+      await fetch(`${API_BASE}/api/pi/approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paymentId })
+      });
+    },
+    onReadyForServerCompletion: async (paymentId, txid) => {
+      await fetch(`${API_BASE}/api/pi/complete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paymentId, txid })
+      });
+      showToast("Paiement test réussi !");
+      btn.textContent = "Paiement effectué ✓";
+    },
+    onCancel: (paymentId) => {
+      showToast("Paiement annulé");
+      btn.disabled = false;
+      btn.textContent = "Payer 0.01 Pi (test)";
+    },
+    onError: (error, payment) => {
+      showToast("Erreur paiement: " + (error && error.message ? error.message : "inconnue"));
+      console.error(error);
+      btn.disabled = false;
+      btn.textContent = "Payer 0.01 Pi (test)";
+    }
+  });
+});
+
 function onIncompletePaymentFound(payment) {
+  console.log("Paiement incomplet trouvé :", payment);
+}
   console.log("Paiement incomplet trouvé :", payment);
 }
 
 async function onLoginSuccess() {
   document.getElementById('loginCard').style.display = 'none';
+  document.getElementById('testPaymentCard').style.display = 'block';
   document.getElementById('quizCard').style.display = 'block';
   document.getElementById('wheelCard').style.display = 'block';
   document.getElementById('leaderboardCard').style.display = 'block';
