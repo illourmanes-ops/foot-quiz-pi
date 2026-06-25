@@ -375,26 +375,12 @@
     z-index: 1000;
   }
   .toast.show { opacity: 1; }
-
-  .loading-spinner {
-    display: inline-block;
-    width: 20px;
-    height: 20px;
-    border: 2px solid rgba(255,255,255,0.3);
-    border-radius: 50%;
-    border-top-color: var(--gold-bright);
-    animation: spin 0.6s linear infinite;
-  }
-  
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
 </style>
 </head>
 <body>
 
 <div class="lang-bar" id="langBar">
-  <button data-lang="fr">FR</button>
+  <button data-lang="fr" class="active">FR</button>
   <button data-lang="en">EN</button>
   <button data-lang="es">ES</button>
 </div>
@@ -425,14 +411,14 @@
   <div class="card" id="loginCard">
     <h2>🔐 Connexion</h2>
     <p class="desc">Connecte-toi avec Pi Network pour jouer et garder tes points.</p>
-    <button class="btn-primary" id="loginBtn">Se connecter avec Pi</button>
+    <button class="btn-primary" id="loginBtn" onclick="handleLogin()">Se connecter avec Pi</button>
   </div>
 
   <!-- Les autres cartes (cachées par défaut) -->
   <div class="card" id="testPaymentCard" style="display:none;">
     <h2>💳 Test de paiement</h2>
     <p class="desc">Effectue un petit paiement test (0.01 Pi) pour valider la configuration de ton app.</p>
-    <button class="btn-primary" id="testPaymentBtn">Payer 0.01 Pi (test)</button>
+    <button class="btn-primary" id="testPaymentBtn" onclick="handleTestPayment()">Payer 0.01 Pi (test)</button>
   </div>
 
   <div class="card" id="quizCard" style="display:none;">
@@ -444,10 +430,10 @@
     </div>
     <div id="quizContainer"></div>
     <div class="quiz-nav">
-      <button class="btn-ghost" id="prevQuestionBtn" style="display:none;">← Précédent</button>
-      <button class="btn-ghost" id="nextQuestionBtn" style="display:none;">Suivant →</button>
+      <button class="btn-ghost" id="prevQuestionBtn" style="display:none;" onclick="prevQuestion()">← Précédent</button>
+      <button class="btn-ghost" id="nextQuestionBtn" style="display:none;" onclick="nextQuestion()">Suivant →</button>
     </div>
-    <button class="btn-primary" id="submitQuizBtn" style="display:none;">Valider mes réponses</button>
+    <button class="btn-primary" id="submitQuizBtn" style="display:none;" onclick="handleSubmitQuiz()">Valider mes réponses</button>
   </div>
 
   <div class="card wheel-zone" id="wheelCard" style="display:none;">
@@ -456,7 +442,7 @@
       <div class="wheel-pointer"></div>
       <svg id="wheelSvg" width="220" height="220" viewBox="0 0 100 100"></svg>
     </div>
-    <button class="btn-primary" id="spinBtn">Regarder une pub et tourner</button>
+    <button class="btn-primary" id="spinBtn" onclick="handleSpinWheel()">Regarder une pub et tourner</button>
   </div>
 
   <div class="card" id="shootCard" style="display:none;">
@@ -467,9 +453,9 @@
         <span class="ball-emoji" id="ballEmoji">⚽</span>
       </div>
       <div class="zone-buttons">
-        <button id="zoneGauche" data-zone="gauche">⬅️ Gauche</button>
-        <button id="zoneCentre" data-zone="centre">⬆️ Centre</button>
-        <button id="zoneDroite" data-zone="droite">➡️ Droite</button>
+        <button id="zoneGauche" data-zone="gauche" onclick="handleShoot('gauche')">⬅️ Gauche</button>
+        <button id="zoneCentre" data-zone="centre" onclick="handleShoot('centre')">⬆️ Centre</button>
+        <button id="zoneDroite" data-zone="droite" onclick="handleShoot('droite')">➡️ Droite</button>
       </div>
     </div>
     <p style="text-align:center; margin-top:10px; color: var(--gold-dim);" id="shootResult"></p>
@@ -478,13 +464,13 @@
   <div class="card" id="packCard" style="display:none;">
     <h2>📦 Pack Bonus</h2>
     <p class="desc">Soutiens l'app et reçois 100 points bonus instantanément pour 0.1 Pi.</p>
-    <button class="btn-primary" id="buyPackBtn">Acheter pour 0.1 Pi</button>
+    <button class="btn-primary" id="buyPackBtn" onclick="handleBuyPack()">Acheter pour 0.1 Pi</button>
   </div>
 
   <div class="card" id="shareCard" style="display:none; text-align:center;">
     <h2 style="justify-content:center;">📣 Invite tes amis</h2>
     <p class="desc">Partage l'app et défie tes amis au quiz foot du jour !</p>
-    <button id="shareBtn" style="background:#25d366; color:white;">📱 WhatsApp</button>
+    <button id="shareBtn" style="background:#25d366; color:white;" onclick="handleShare()">📱 WhatsApp</button>
   </div>
 
   <div class="card" id="leaderboardCard" style="display:none;">
@@ -512,98 +498,187 @@ try {
   console.log('⚠️ Erreur Pi.init - mode test activé:', e.message);
 }
 
-// ===================== TRADUCTIONS =====================
-const translations = {
-  fr: {
-    subtitle: "Quiz du jour • Roue de la chance • Tirs au but • Classement",
-    player: "Joueur", streak: "Série 🔥", points: "Points",
-    loginTitle: "Connexion", loginDesc: "Connecte-toi avec Pi Network pour jouer et garder tes points.", loginBtn: "Se connecter avec Pi",
-    testPayTitle: "Test de paiement", testPayDesc: "Effectue un petit paiement test (0.01 Pi) pour valider la configuration de ton app.", testPayBtn: "Payer 0.01 Pi (test)",
-    quizTitle: "Quiz du jour", quizDesc: "5 questions, 10 points par bonne réponse.", quizSubmit: "Valider mes réponses",
-    wheelTitle: "Roue quotidienne", spinBtn: "Regarder une pub et tourner",
-    shootTitle: "Tirs au but", shootDesc: "Choisis ta zone de tir. Si le gardien ne devine pas, tu marques entre 10 et 30 points !",
-    zoneGauche: "⬅️ Gauche", zoneCentre: "⬆️ Centre", zoneDroite: "➡️ Droite",
-    packTitle: "Pack Bonus", packDesc: "Soutiens l'app et reçois 100 points bonus instantanément pour 0.1 Pi.", packBtn: "Acheter pour 0.1 Pi",
-    shareTitle: "Invite tes amis", shareDesc: "Partage l'app et défie tes amis au quiz foot du jour !",
-    leaderboardTitle: "Classement",
-    answerAll: "Réponds à toutes les questions !",
-    quizAlreadyDone: "Quiz déjà fait aujourd'hui ✓",
-    wheelAlreadyDone: "Roue déjà tournée ✓",
-    questionLabel: "Question",
-    prev: "← Précédent", next: "Suivant →",
-    goalScored: "⚽ BUT ! Le gardien a plongé du mauvais côté !",
-    goalMissed: "😞 Arrêté ! Le gardien a deviné la bonne zone.",
-    pointsEarned: "Points gagnés",
-    loading: "Chargement...",
-    error: "Une erreur est survenue",
-    noAccount: "Crée un compte Pi pour jouer",
-    wheelWin: "Félicitations ! Tu as gagné",
-    packSuccess: "Pack acheté avec succès ! +100 points",
-    shareText: "🎯 Joue au Foot Quiz Pi et gagne des points ! Rejoins-moi : "
+// ===================== ÉTAT DE L'APPLICATION =====================
+let currentUsername = null;
+let currentQuiz = [];
+let selectedAnswers = [];
+let currentQuestionIndex = 0;
+let userPoints = 0;
+let userStreak = 0;
+let quizCompleted = false;
+let wheelSpun = false;
+let shootDone = false;
+
+// ===================== QUESTIONS DE QUIZ =====================
+const quizQuestions = [
+  {
+    question: "Qui a gagné la Coupe du Monde 2022 ?",
+    options: ["France", "Brésil", "Argentine", "Allemagne"],
+    correct: 2
   },
-  en: {
-    subtitle: "Daily Quiz • Lucky Wheel • Penalty Shots • Leaderboard",
-    player: "Player", streak: "Streak 🔥", points: "Points",
-    loginTitle: "Login", loginDesc: "Sign in with Pi Network to play and keep your points.", loginBtn: "Sign in with Pi",
-    testPayTitle: "Payment Test", testPayDesc: "Make a small test payment (0.01 Pi) to validate your app setup.", testPayBtn: "Pay 0.01 Pi (test)",
-    quizTitle: "Daily Quiz", quizDesc: "5 questions, 10 points per correct answer.", quizSubmit: "Submit my answers",
-    wheelTitle: "Daily Wheel", spinBtn: "Watch an ad and spin",
-    shootTitle: "Penalty Shootout", shootDesc: "Pick your shooting zone. If the keeper guesses wrong, you score 10 to 30 points!",
-    zoneGauche: "⬅️ Left", zoneCentre: "⬆️ Center", zoneDroite: "➡️ Right",
-    packTitle: "Bonus Pack", packDesc: "Support the app and get 100 bonus points instantly for 0.1 Pi.", packBtn: "Buy for 0.1 Pi",
-    shareTitle: "Invite friends", shareDesc: "Share the app and challenge your friends on today's quiz!",
-    leaderboardTitle: "Leaderboard",
-    answerAll: "Answer all questions!",
-    quizAlreadyDone: "Quiz already done today ✓",
-    wheelAlreadyDone: "Wheel already spun ✓",
-    questionLabel: "Question",
-    prev: "← Previous", next: "Next →",
-    goalScored: "⚽ GOAL! The keeper dove the wrong way!",
-    goalMissed: "😞 Saved! The keeper guessed correctly.",
-    pointsEarned: "Points earned",
-    loading: "Loading...",
-    error: "An error occurred",
-    noAccount: "Create a Pi account to play",
-    wheelWin: "Congratulations! You won",
-    packSuccess: "Pack purchased successfully! +100 points",
-    shareText: "🎯 Play Foot Quiz Pi and earn points! Join me: "
+  {
+    question: "Combien de joueurs y a-t-il dans une équipe de football sur le terrain ?",
+    options: ["9", "10", "11", "12"],
+    correct: 2
   },
-  es: {
-    subtitle: "Quiz diario • Ruleta • Penaltis • Clasificación",
-    player: "Jugador", streak: "Racha 🔥", points: "Puntos",
-    loginTitle: "Acceso", loginDesc: "Conéctate con Pi Network para jugar y guardar tus puntos.", loginBtn: "Conectar con Pi",
-    testPayTitle: "Prueba de pago", testPayDesc: "Haz un pequeño pago de prueba (0.01 Pi) para validar tu app.", testPayBtn: "Pagar 0.01 Pi (prueba)",
-    quizTitle: "Quiz diario", quizDesc: "5 preguntas, 10 puntos por respuesta correcta.", quizSubmit: "Enviar mis respuestas",
-    wheelTitle: "Ruleta diaria", spinBtn: "Ver anuncio y girar",
-    shootTitle: "Tanda de penaltis", shootDesc: "Elige tu zona de tiro. ¡Si el portero no adivina, marcas entre 10 y 30 puntos!",
-    zoneGauche: "⬅️ Izquierda", zoneCentre: "⬆️ Centro", zoneDroite: "➡️ Derecha",
-    packTitle: "Pack Bono", packDesc: "Apoya la app y recibe 100 puntos extra al instante por 0.1 Pi.", packBtn: "Comprar por 0.1 Pi",
-    shareTitle: "Invita a tus amigos", shareDesc: "¡Comparte la app y desafía a tus amigos en el quiz de hoy!",
-    leaderboardTitle: "Clasificación",
-    answerAll: "¡Responde todas las preguntas!",
-    quizAlreadyDone: "Quiz ya completado hoy ✓",
-    wheelAlreadyDone: "Ruleta ya girada ✓",
-    questionLabel: "Pregunta",
-    prev: "← Anterior", next: "Siguiente →",
-    goalScored: "⚽ ¡GOL! ¡El portero se lanzó al lado equivocado!",
-    goalMissed: "😞 ¡Parado! El portero adivinó correctamente.",
-    pointsEarned: "Puntos ganados",
-    loading: "Cargando...",
-    error: "Ocurrió un error",
-    noAccount: "Crea una cuenta Pi para jugar",
-    wheelWin: "¡Felicitaciones! Ganaste",
-    packSuccess: "¡Pack comprado con éxito! +100 puntos",
-    shareText: "🎯 ¡Juega Foot Quiz Pi y gana puntos! Únete: "
+  {
+    question: "Quel club a remporté le plus de Ligues des Champions ?",
+    options: ["FC Barcelone", "Real Madrid", "Bayern Munich", "Liverpool"],
+    correct: 1
+  },
+  {
+    question: "Dans quel pays le football moderne a-t-il été codifié ?",
+    options: ["France", "Italie", "Brésil", "Angleterre"],
+    correct: 3
+  },
+  {
+    question: "Qui est surnommé 'La Pulga' ?",
+    options: ["Cristiano Ronaldo", "Neymar", "Lionel Messi", "Kylian Mbappé"],
+    correct: 2
+  },
+  {
+    question: "Combien de temps dure un match de football professionnel ?",
+    options: ["80 minutes", "90 minutes", "100 minutes", "120 minutes"],
+    correct: 1
+  },
+  {
+    question: "Quel pays a gagné la première Coupe du Monde en 1930 ?",
+    options: ["Brésil", "Argentine", "Uruguay", "Italie"],
+    correct: 2
+  },
+  {
+    question: "Combien de Ballons d'Or Lionel Messi a-t-il gagnés ?",
+    options: ["5", "6", "7", "8"],
+    correct: 3
   }
-};
+];
 
-let currentLang = localStorage.getItem('fqp_lang') || 'fr';
+// ===================== ROUE DE LA CHANCE =====================
+const WHEEL_PRIZES = [5, 10, 15, 20, 25, 50, 100];
+const WHEEL_WEIGHTS = [25, 25, 20, 15, 10, 4, 1];
+const WHEEL_COLORS = ['#1d3322', '#234027', '#2c4f30', '#3a5c33', '#b88f2f', '#e8b84b', '#ff5d4d'];
 
-function t(key) {
-  return translations[currentLang][key] || key;
+function buildWheelSegments() {
+  const total = WHEEL_WEIGHTS.reduce((a, b) => a + b, 0);
+  let acc = 0;
+  return WHEEL_WEIGHTS.map((w, i) => {
+    const start = acc;
+    const sweep = (w / total) * 360;
+    acc += sweep;
+    return { 
+      start, 
+      end: acc, 
+      mid: start + sweep / 2, 
+      prize: WHEEL_PRIZES[i], 
+      color: WHEEL_COLORS[i] 
+    };
+  });
 }
 
-function applyTranslations() {
-  // Mise à jour des textes fixes
-  document.getElementById('headerSubtitle').textContent = t('subtitle');
-  document.getElement
+const wheelSegments = buildWheelSegments();
+
+function polarToCartesian(cx, cy, r, angleDeg) {
+  const angleRad = (angleDeg - 90) * Math.PI / 180;
+  return {
+    x: cx + r * Math.cos(angleRad),
+    y: cy + r * Math.sin(angleRad)
+  };
+}
+
+function describeArc(cx, cy, r, startAngle, endAngle) {
+  const start = polarToCartesian(cx, cy, r, endAngle);
+  const end = polarToCartesian(cx, cy, r, startAngle);
+  const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
+  return [
+    "M", cx, cy,
+    "L", start.x, start.y,
+    "A", r, r, 0, largeArcFlag, 0, end.x, end.y,
+    "Z"
+  ].join(" ");
+}
+
+function drawWheel() {
+  const svg = document.getElementById('wheelSvg');
+  if (!svg) {
+    console.error('❌ SVG de la roue introuvable');
+    return;
+  }
+  const cx = 50, cy = 50, r = 45;
+  let html = '';
+  
+  wheelSegments.forEach(seg => {
+    const midAngle = seg.mid;
+    const labelPos = polarToCartesian(cx, cy, r * 0.7, midAngle);
+    html += `<path d="${describeArc(cx, cy, r, seg.start, seg.end)}" fill="${seg.color}" stroke="rgba(255,255,255,0.2)" stroke-width="0.5"/>`;
+    html += `<text x="${labelPos.x}" y="${labelPos.y}" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="5" font-weight="bold">${seg.prize}</text>`;
+  });
+  
+  html += `<circle cx="${cx}" cy="${cy}" r="10" fill="#1a1208" stroke="var(--gold-bright)" stroke-width="1.5"/>`;
+  html += `<text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" fill="var(--gold-bright)" font-size="4" font-weight="bold">🎡</text>`;
+  
+  svg.innerHTML = html;
+  console.log('✅ Roue dessinée');
+}
+
+// ===================== FONCTIONS UTILITAIRES =====================
+function showToast(msg) {
+  console.log('🔔 Toast:', msg);
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
+function getToday() {
+  return new Date().toISOString().split('T')[0];
+}
+
+function saveState() {
+  const state = {
+    username: currentUsername,
+    points: userPoints,
+    streak: userStreak,
+    quizCompleted,
+    wheelSpun,
+    shootDone,
+    date: getToday()
+  };
+  localStorage.setItem('fqp_state', JSON.stringify(state));
+  console.log('💾 État sauvegardé:', state);
+}
+
+function loadState() {
+  const saved = localStorage.getItem('fqp_state');
+  if (saved) {
+    const state = JSON.parse(saved);
+    console.log('📂 État chargé:', state);
+    if (state.date === getToday()) {
+      currentUsername = state.username;
+      userPoints = state.points;
+      userStreak = state.streak;
+      quizCompleted = state.quizCompleted;
+      wheelSpun = state.wheelSpun;
+      shootDone = state.shootDone;
+      return true;
+    } else {
+      userStreak = (state.streak || 0) + 1;
+      quizCompleted = false;
+      wheelSpun = false;
+      shootDone = false;
+      userPoints = state.points || 0;
+      if (state.username) {
+        currentUsername = state.username;
+      }
+    }
+  }
+  return false;
+}
+
+function updateUI() {
+  console.log('🔄 Mise à jour UI');
+  document.getElementById('usernameDisplay').textContent = currentUsername || '—';
+  document.getElementById('streakDisplay').textContent = userStreak;
+  document.getElementById('pointsDisplay').textContent = userPoints;
+  
+  document.getElementById('loginCard').style.display = currentUsername ? 'none' : 'block';
+  document.getElementById('testPaymentCard').style.display = curr
