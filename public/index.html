@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Foot Quiz Pi - Premium Pro</title>
+    <title>Foot Quiz Pi - Premium</title>
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Inter:wght@400;700&display=swap" rel="stylesheet">
     <style>
@@ -25,41 +25,34 @@
 
 <header style="text-align:center; margin-bottom: 30px;">
     <h1>⚽ FOOT QUIZ PI - INFINI Pro ⚽</h1>
-    <p style="color: var(--gold);">Des quiz illimités • Regarde des pubs ou utilise tes Pi pour parier !</p>
 </header>
 
 <main style="max-width: 500px; margin: 0 auto;">
-    <!-- TABLEAU DES SCORES -->
     <div class="card" style="display:flex; justify-content: space-around; text-align:center;">
         <div><div>Points</div><div id="ptsDisplay" style="font-size:1.5rem; font-weight:bold; color:var(--gold);">0</div></div>
         <div><div>Tickets Paris</div><div id="ticketsDisplay" style="font-size:1.5rem; font-weight:bold; color:var(--green);">0</div></div>
     </div>
 
-    <!-- CONNEXION -->
     <div class="card" id="loginCard">
         <h2>🔐 Accès au Stade</h2>
         <button id="loginBtn">Se connecter avec Pi Network</button>
     </div>
 
     <div id="gameZone" style="display:none;">
-        <!-- ZONE ZONE TV - PI ADS -->
         <div class="card" style="border: 2px dashed var(--gold);">
             <h2>📺 Zone TV - Sponsor (Pi Ads)</h2>
-            <p>Regarde une vidéo publicitaire pour gagner 1 Ticket de Pari et +50 points !</p>
+            <p>Regarde un sponsor pour gagner 1 Ticket et +50 points !</p>
             <button class="btn-ad" id="watchAdBtn">🎬 Regarder la Pub Vidéo</button>
         </div>
 
-        <!-- ZONE ACHAT PREMIUM (0.1 PI) -->
         <div class="card" style="border: 1px solid var(--gold);">
             <h2>💎 Pack Premium Tickets</h2>
-            <p>Pas le temps pour une pub ? Achète 5 Tickets de paris pour <strong>0.1 Pi</strong> !</p>
+            <p>Obtiens 5 Tickets de paris instantanément pour <strong>0.1 Pi</strong> !</p>
             <button id="buyTicketsBtn" style="background: #107c41; color: white;">🛒 Acheter pour 0.1 Pi</button>
         </div>
 
-        <!-- PARIS EN DIRECT -->
         <div class="card">
             <h2>🏆 Paris du Jour</h2>
-            <p>Mise tes Tickets gagnés sur les vrais matchs.</p>
             <div class="match-box">
                 <div style="font-weight:bold;">Real Madrid 🆚 FC Barcelone</div>
                 <div class="bet-buttons">
@@ -70,118 +63,69 @@
             </div>
         </div>
 
-        <!-- QUIZ SÉRIE INFINIE -->
         <div class="card">
             <h2>🧠 Quiz (Série Infinie)</h2>
-            <div id="quizContainer">Chargement des questions...</div>
+            <div id="quizContainer">Chargement...</div>
             <button id="submitQuizBtn">Valider et charger la suite</button>
         </div>
 
-        <!-- BOUTON DE PARTAGE VIRAL -->
         <div class="card" style="text-align:center;">
-            <p>Partage l'application avec tes amis fans de foot !</p>
-            <button onclick="window.open('https://wa.me/?text=Viens+jouer+à+Foot+Quiz+Pi+et+gagne+tes+paris+!+https://foot-quiz-pi.onrender.com')" 
+            <button onclick="window.open('https://wa.me/?text=Viens+jouer+à+Foot+Quiz+Pi+!+https://foot-quiz-pi.onrender.com')" 
                     style="background: #25d366; color: white; margin-top: 0;">📱 Partager sur WhatsApp</button>
         </div>
     </div>
 </main>
 
 <script>
-    const API_BASE = "https://foot-quiz-pi.onrender.com";
+    const API_BASE = window.location.origin;
     let currentQuiz = [];
     let selectedAnswers = [];
     let userPoints = 0;
     let userTickets = 0;
 
-    // Initialisation officielle du SDK Pi en MODE RÉEL (sandbox: false)
     if (typeof Pi !== 'undefined') Pi.init({ version: "2.0", sandbox: false });
 
-    // --- LOGIQUE INTÉGRATION PI ADS ---
     document.getElementById('watchAdBtn').addEventListener('click', async () => {
         const btn = document.getElementById('watchAdBtn');
         btn.disabled = true;
-        btn.textContent = "Vérification du sponsor...";
+        btn.textContent = "Chargement...";
 
         if (typeof Pi !== 'undefined' && Pi.Ads) {
             try {
                 const isAdReadyResponse = await Pi.Ads.isAdReady("rewarded");
-
                 if (isAdReadyResponse.ready === false) {
-                    btn.textContent = "Chargement de la vidéo...";
-                    const requestAdResponse = await Pi.Ads.requestAd("rewarded");
-
-                    if (requestAdResponse.result === "ADS_NOT_SUPPORTED") {
-                        alert("Veuillez mettre à jour votre Pi Browser pour regarder des vidéos.");
-                        resetAdButton(btn);
-                        return;
-                    }
-
-                    if (requestAdResponse.result !== "AD_LOADED") {
-                        alert("Publicité temporairement indisponible. Réessayez plus tard.");
-                        resetAdButton(btn);
-                        return;
-                    }
+                    await Pi.Ads.requestAd("rewarded");
                 }
-
-                btn.textContent = "Lecture en cours...";
                 const showAdResponse = await Pi.Ads.showAd("rewarded");
-
                 if (showAdResponse.result === "AD_REWARDED") {
-                    const adId = showAdResponse.adId; 
-                    
                     const res = await fetch(`${API_BASE}/api/ads/verify`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ username: "player", adId: adId })
+                        body: JSON.stringify({ adId: showAdResponse.adId })
                     });
-                    
                     const data = await res.json();
-                    if (data.rewarded === true) {
+                    if (data.rewarded) {
                         userPoints += data.pointsEarned;
                         userTickets += data.ticketsEarned;
-                        document.getElementById('ptsDisplay').textContent = userPoints;
-                        document.getElementById('ticketsDisplay').textContent = userTickets;
-                        alert(`🎁 Succès ! +${data.pointsEarned} points et +${data.ticketsEarned} Ticket ajoutés.`);
-                    } else {
-                        alert("Erreur lors de la validation du serveur publicitaire.");
+                        updateDisplays();
+                        alert("🎁 Récompense ajoutée !");
                     }
-                } else {
-                    alert("La vidéo n'a pas été regardée en entier.");
                 }
-            } catch (err) {
-                alert("Erreur système avec la publicité.");
-            } finally {
-                resetAdButton(btn);
-            }
+            } catch (err) { alert("Erreur publicitaire."); }
         } else {
-            // Simulation hors Pi Browser
-            setTimeout(() => {
-                userPoints += 50; userTickets += 1;
-                document.getElementById('ptsDisplay').textContent = userPoints;
-                document.getElementById('ticketsDisplay').textContent = userTickets;
-                alert("🎮 Mode Test : +50 points et 1 Ticket ajoutés !");
-                resetAdButton(btn);
-            }, 1500);
+            userPoints += 50; userTickets += 1; updateDisplays();
+            alert("🎮 Mode Test : +50 pts, +1 Ticket !");
         }
+        btn.disabled = false; btn.textContent = "🎬 Regarder la Pub Vidéo";
     });
 
-    function resetAdButton(btn) {
-        btn.disabled = false;
-        btn.textContent = "🎬 Regarder la Pub Vidéo";
-    }
-
-    // --- LOGIQUE PAIEMENT BLOCAKCHAIN 0.1 PI ---
     document.getElementById('buyTicketsBtn').addEventListener('click', async () => {
-        if (typeof Pi === 'undefined') {
-            alert("Le SDK Pi n'est pas détecté. Utilisez le Pi Browser.");
-            return;
-        }
-
+        if (typeof Pi === 'undefined') { return alert("Utilise le Pi Browser."); }
         try {
-            const payment = await Pi.createPayment({
+            await Pi.createPayment({
                 amount: 0.1,
-                memo: "Achat de 5 Tickets de paris - Foot Quiz Pi",
-                metadata: { type: "tickets_pack", quantity: 5 },
+                memo: "Achat de 5 Tickets - Foot Quiz Pi",
+                metadata: { type: "tickets" },
             }, {
                 onReadyForServerApproval: async (paymentId) => {
                     const res = await fetch(`${API_BASE}/api/pi/approve`, {
@@ -199,40 +143,30 @@
                     });
                     return res.json();
                 },
-                onCancel: (paymentId) => { alert("Paiement annulé."); },
-                onError: (error, payment) => { alert("Erreur lors du paiement Pi."); }
+                onCancel: () => {}, onError: () => { alert("Erreur paiement."); }
             });
-
-            userTickets += 5;
-            document.getElementById('ticketsDisplay').textContent = userTickets;
-            alert("🎉 Paiement reçu ! +5 Tickets ajoutés avec succès.");
-
-        } catch (err) {
-            alert("Impossible de lancer l'interface de paiement.");
-        }
+            userTickets += 5; updateDisplays();
+            alert("🎉 Pack activé !");
+        } catch (err) { alert("Erreur d'initialisation."); }
     });
 
-    // --- LOGIQUE DU JEU ---
-    window.placeBet = (prediction) => {
-        if (userTickets < 1) { alert("❌ Il te faut un ticket ! Regarde une pub ou achète un pack."); return; }
-        userTickets--;
-        document.getElementById('ticketsDisplay').textContent = userTickets;
-        alert(`⚽ Pari enregistré sur : ${prediction} !`);
+    window.placeBet = (pred) => {
+        if (userTickets < 1) return alert("Il te faut un ticket !");
+        userTickets--; updateDisplays();
+        alert(`⚽ Pari enregistré : ${pred} !`);
     };
 
     async function loadQuiz() {
         try {
-            document.getElementById('quizContainer').innerHTML = "Chargement de nouvelles questions...";
             const res = await fetch(`${API_BASE}/api/quiz`);
             currentQuiz = await res.json();
             selectedAnswers = new Array(currentQuiz.length).fill(null);
             renderQuiz();
-        } catch (e) { document.getElementById('quizContainer').innerHTML = "Erreur de chargement du quiz."; }
+        } catch (e) { document.getElementById('quizContainer').innerHTML = "Erreur réseau."; }
     }
 
     function renderQuiz() {
-        const container = document.getElementById('quizContainer');
-        container.innerHTML = currentQuiz.map((q, qIdx) => `
+        document.getElementById('quizContainer').innerHTML = currentQuiz.map((q, qIdx) => `
             <div style="margin-bottom:15px;">
                 <p style="font-weight:bold;">⚽ ${qIdx + 1}. ${q.question}</p>
                 ${q.options.map((opt, oIdx) => `
@@ -243,10 +177,11 @@
         `).join('');
     }
 
-    window.selectOption = (qIdx, oIdx) => {
-        selectedAnswers[qIdx] = oIdx;
-        renderQuiz();
-    };
+    window.selectOption = (qIdx, oIdx) => { selectedAnswers[qIdx] = oIdx; renderQuiz(); };
+    function updateDisplays() {
+        document.getElementById('ptsDisplay').textContent = userPoints;
+        document.getElementById('ticketsDisplay').textContent = userTickets;
+    }
 
     document.getElementById('loginBtn').addEventListener('click', () => {
         document.getElementById('loginCard').style.display = 'none';
@@ -255,31 +190,18 @@
     });
 
     document.getElementById('submitQuizBtn').addEventListener('click', async () => {
-        if (selectedAnswers.includes(null)) { alert("Réponds à toutes les questions !"); return; }
-        
-        const btn = document.getElementById('submitQuizBtn');
-        btn.disabled = true;
-        btn.textContent = "Calcul du score...";
-
+        if (selectedAnswers.includes(null)) return alert("Réponds à tout !");
         try {
             const res = await fetch(`${API_BASE}/api/quiz/submit`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username: "player", answers: selectedAnswers, quizData: currentQuiz })
+                body: JSON.stringify({ answers: selectedAnswers, quizData: currentQuiz })
             });
             const data = await res.json();
-            userPoints += data.pointsEarned;
-            document.getElementById('ptsDisplay').textContent = userPoints;
-            
-            alert(`🎉 Série terminée ! Score : ${data.correctCount}/${currentQuiz.length} (+${data.pointsEarned} pts). Place à la suite !`);
-            
-            btn.disabled = false;
-            btn.textContent = "Valider et charger la suite";
+            userPoints += data.pointsEarned; updateDisplays();
+            alert(`Score : ${data.correctCount}/5 !`);
             loadQuiz();
-        } catch(e) {
-            alert("Erreur réseau.");
-            btn.disabled = false;
-        }
+        } catch(e) { alert("Erreur."); }
     });
 </script>
 </body>
