@@ -56,48 +56,35 @@
   .scoreboard .value { font-size: 22px; color: #ffd166; font-weight: 700; }
   
   .toast {
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: #ffd166;
-    color: #1a1208;
-    padding: 12px 20px;
-    border-radius: 10px;
-    font-weight: 700;
-    z-index: 999;
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: #ffd166; color: #1a1208; padding: 12px 20px;
+    border-radius: 10px; font-weight: 700; z-index: 999;
     display: none;
   }
   .toast.show { display: block; }
   
   .option-btn {
     background: rgba(255,255,255,0.05);
-    border: 1px solid #2a4a30;
-    color: white;
-    text-align: left;
-    padding: 12px;
-    border-radius: 10px;
-    cursor: pointer;
-    margin: 4px 0;
+    border: 1px solid #2a4a30; color: white;
+    text-align: left; padding: 12px; border-radius: 10px;
+    cursor: pointer; margin: 4px 0;
   }
   .option-btn.selected { border-color: #e8b84b; background: rgba(232,184,75,0.15); }
   
   .ad-overlay {
-    display: none;
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.95);
-    z-index: 1000;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
+    display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.95); z-index: 1000;
+    flex-direction: column; align-items: center; justify-content: center; text-align: center;
   }
   .ad-overlay.show { display: flex; }
   
+  .ad-box {
+    background: #111; border: 2px solid #8c3ce0;
+    border-radius: 20px; padding: 30px; max-width: 350px;
+  }
+  
   .ad-spinner {
-    width: 60px;
-    height: 60px;
+    width: 50px; height: 50px;
     border: 4px solid rgba(255,255,255,0.1);
     border-top: 4px solid #8c3ce0;
     border-radius: 50%;
@@ -116,24 +103,15 @@
 <h1 style="text-align:center; color:#ffd166;">⚽ Foot Quiz Pi</h1>
 
 <div class="scoreboard">
-  <div>
-    <div class="label">JOUEUR</div>
-    <div class="value" id="nameDisplay">—</div>
-  </div>
-  <div>
-    <div class="label">POINTS</div>
-    <div class="value" id="ptsDisplay">0</div>
-  </div>
-  <div>
-    <div class="label">SÉRIE</div>
-    <div class="value" id="streakDisplay">0 🔥</div>
-  </div>
+  <div><div class="label">JOUEUR</div><div class="value" id="nameDisplay">—</div></div>
+  <div><div class="label">POINTS</div><div class="value" id="ptsDisplay">0</div></div>
+  <div><div class="label">SÉRIE</div><div class="value" id="streakDisplay">0 🔥</div></div>
 </div>
 
 <!-- LOGIN -->
 <div class="card" id="cardLogin">
-  <h2>🔐 Connexion</h2>
-  <p>Connecte-toi avec Pi Network ou entre ton pseudo</p>
+  <h2>🔐 Connexion Pi Network</h2>
+  <p>Connecte-toi pour jouer !</p>
   <button class="btn-purple" id="btnLoginPi">🪙 Se connecter avec Pi</button>
   <p style="text-align:center; color:#888;">— ou —</p>
   <input type="text" id="pseudoInput" placeholder="Entre ton pseudo..." 
@@ -151,7 +129,7 @@
     <button id="btnPrev" style="display:none;">←</button>
     <button id="btnNext" style="display:none;">→</button>
   </div>
-  <button class="btn-yellow" id="btnSubmitQuiz">✅ Valider (10 pts/bonne réponse)</button>
+  <button class="btn-yellow" id="btnSubmitQuiz">✅ Valider</button>
 </div>
 
 <!-- ROUE -->
@@ -168,7 +146,7 @@
 <!-- TIR -->
 <div class="card" id="cardShoot" style="display:none;">
   <h2>🥅 Tir au but</h2>
-  <p>Choisis ta zone ! 10-30 points si tu marques</p>
+  <p>Choisis ta zone !</p>
   <div style="border:3px solid white; border-bottom:none; height:70px; max-width:250px; margin:0 auto; display:flex; align-items:flex-end; justify-content:center; font-size:30px;">⚽</div>
   <div style="display:flex; gap:5px; margin-top:10px;">
     <button onclick="shoot('gauche')">⬅️ Gauche</button>
@@ -188,19 +166,18 @@
 
 <!-- PACK PI -->
 <div class="card" id="cardPack" style="display:none;">
-  <h2>📦 Pack Pi</h2>
+  <h2>🪙 Pack Pi</h2>
   <p>Achète des points avec Pi</p>
-  <button class="btn-purple" onclick="addPts(100); toast('✅ +100 points !');">🪙 100 pts = 0.1 Pi</button>
-  <button class="btn-purple" onclick="addPts(500); toast('✅ +500 points !');">🪙 500 pts = 0.5 Pi</button>
+  <button class="btn-purple" id="btnBuy100">100 pts = 0.1 Pi</button>
+  <button class="btn-purple" id="btnBuy500">500 pts = 0.5 Pi</button>
 </div>
 
 <!-- OVERLAY PUB PI -->
 <div class="ad-overlay" id="adOverlay">
-  <div style="background:#111; border:2px solid #8c3ce0; border-radius:20px; padding:30px; max-width:350px; text-align:center;">
+  <div class="ad-box">
     <div class="ad-spinner" id="adSpinner"></div>
     <p style="color:#ffd166; font-size:18px;" id="adStatus">📺 Chargement de la pub Pi...</p>
     <p style="color:#ff5d4d; font-size:14px;" id="adError"></p>
-    <p style="color:#888; font-size:12px;">La roue tournera après la pub</p>
   </div>
 </div>
 
@@ -208,44 +185,34 @@
 
 <script>
 // ==========================================
-// INIT PI NETWORK
+// INIT PI SDK
 // ==========================================
 let PiReady = false;
+let PiNetwork = null;
+
 try {
   Pi.init({ version: "2.0", sandbox: true });
+  PiNetwork = Pi;
   PiReady = true;
-  console.log('✅ Pi SDK prêt - Mode SANDBOX');
+  console.log('✅ Pi SDK initialisé');
+  console.log('✅ Pi.Ads disponible:', typeof Pi.Ads);
 } catch(e) {
-  console.log('⚠️ Pi SDK non disponible - Mode démo');
+  console.log('⚠️ Pi SDK non disponible');
 }
 
 // ==========================================
 // DONNÉES
 // ==========================================
-let name = null;
-let pts = 0;
-let streak = 0;
-let quizDone = false;
-let wheelDone = false;
-let shootDone = false;
+let name = localStorage.getItem('fqp_name') || null;
+let pts = parseInt(localStorage.getItem('fqp_pts') || '0');
+let streak = parseInt(localStorage.getItem('fqp_streak') || '0');
+let quizDone = localStorage.getItem('fqp_quizDone') === 'true';
+let wheelDone = localStorage.getItem('fqp_wheelDone') === 'true';
+let shootDone = localStorage.getItem('fqp_shootDone') === 'true';
 let quiz = [];
 let answers = [];
 let qIndex = 0;
-let inventory = { extra_wheel: 0, extra_shoot: 0, multiplier_2x: 0 };
-
-const saved = localStorage.getItem('fqp_save');
-if (saved) {
-  try {
-    const data = JSON.parse(saved);
-    name = data.name;
-    pts = data.pts || 0;
-    streak = data.streak || 0;
-    quizDone = data.quizDone || false;
-    wheelDone = data.wheelDone || false;
-    shootDone = data.shootDone || false;
-    inventory = data.inventory || { extra_wheel: 0, extra_shoot: 0, multiplier_2x: 0 };
-  } catch(e) {}
-}
+let inventory = JSON.parse(localStorage.getItem('fqp_inv') || '{"extra_wheel":0,"extra_shoot":0}');
 
 const questions = [
   { q: "Qui a gagné le Mondial 2022 ?", o: ["France","Brésil","Argentine","Allemagne"], c: 2 },
@@ -257,16 +224,12 @@ const questions = [
 
 const today = new Date().toDateString();
 if (localStorage.getItem('fqp_date') !== today) {
-  quizDone = false;
-  wheelDone = false;
-  shootDone = false;
+  quizDone = false; wheelDone = false; shootDone = false;
   if (name) streak++;
   localStorage.setItem('fqp_date', today);
 }
 
-// ==========================================
-// FONCTIONS
-// ==========================================
+// ========== FONCTIONS ==========
 function toast(msg) {
   console.log('🔔', msg);
   const t = document.getElementById('toast');
@@ -275,16 +238,14 @@ function toast(msg) {
   setTimeout(() => t.className = 'toast', 3000);
 }
 
-function addPts(amount) {
-  pts += amount;
-  saveAll();
-  updateUI();
-}
-
 function saveAll() {
-  localStorage.setItem('fqp_save', JSON.stringify({
-    name, pts, streak, quizDone, wheelDone, shootDone, inventory
-  }));
+  localStorage.setItem('fqp_name', name || '');
+  localStorage.setItem('fqp_pts', pts);
+  localStorage.setItem('fqp_streak', streak);
+  localStorage.setItem('fqp_quizDone', quizDone);
+  localStorage.setItem('fqp_wheelDone', wheelDone);
+  localStorage.setItem('fqp_shootDone', shootDone);
+  localStorage.setItem('fqp_inv', JSON.stringify(inventory));
   localStorage.setItem('fqp_date', today);
 }
 
@@ -321,43 +282,37 @@ function updateUI() {
   renderShop();
 }
 
-// ==========================================
-// LOGIN - 2 BOUTONS
-// ==========================================
-
-// Bouton Pi Network
+// ========== LOGIN ==========
+// Connexion Pi
 document.getElementById('btnLoginPi').addEventListener('click', async function() {
-  console.log('🟣 Clic Connexion Pi');
+  console.log('🟣 Tentative connexion Pi...');
   
-  if (PiReady) {
+  if (PiReady && PiNetwork) {
     try {
-      const auth = await Pi.authenticate(['username', 'payments'], function(payment) {
-        console.log('💳 Paiement:', payment);
-      });
+      const auth = await PiNetwork.authenticate(
+        ['username', 'payments'],
+        function(payment) { console.log('💳 Paiement:', payment); }
+      );
+      console.log('✅ Auth réussie:', auth);
       doLogin(auth.user.username);
     } catch(e) {
-      console.error('❌ Erreur Pi:', e);
+      console.error('❌ Erreur auth Pi:', e);
       doLogin('Pionnier_' + Math.random().toString(36).substr(2, 5));
     }
   } else {
+    console.log('⚠️ Pi pas dispo, mode démo');
     doLogin('Pionnier_' + Math.random().toString(36).substr(2, 5));
   }
 });
 
-// Bouton Démo (pseudo manuel)
+// Connexion Démo
 document.getElementById('btnLoginDemo').addEventListener('click', function() {
-  console.log('🟡 Clic Connexion Démo');
+  console.log('🟡 Connexion démo');
   const pseudo = document.getElementById('pseudoInput').value.trim();
-  if (pseudo) {
-    doLogin(pseudo);
-  } else {
-    doLogin('Joueur_' + Math.random().toString(36).substr(2, 5));
-  }
+  doLogin(pseudo || 'Joueur_' + Math.random().toString(36).substr(2, 5));
 });
 
-// ==========================================
-// QUIZ
-// ==========================================
+// ========== QUIZ ==========
 function startQuiz() {
   quiz = [...questions].sort(() => Math.random() - 0.5);
   answers = [null, null, null, null, null];
@@ -379,39 +334,26 @@ function showQuestion() {
   document.getElementById('btnNext').style.display = qIndex < 4 ? 'inline-block' : 'none';
 }
 
-function pickAnswer(i) {
-  answers[qIndex] = i;
-  showQuestion();
-}
+function pickAnswer(i) { answers[qIndex] = i; showQuestion(); }
 
 document.getElementById('btnPrev').addEventListener('click', function() {
   if (qIndex > 0) { qIndex--; showQuestion(); }
 });
-
 document.getElementById('btnNext').addEventListener('click', function() {
   if (qIndex < 4) { qIndex++; showQuestion(); }
 });
-
 document.getElementById('btnSubmitQuiz').addEventListener('click', function() {
-  if (answers.includes(null)) {
-    toast('⚠️ Réponds à toutes les questions !');
-    return;
-  }
-  
+  if (answers.includes(null)) { toast('⚠️ Réponds à tout !'); return; }
   let correct = 0;
   quiz.forEach((q, i) => { if (answers[i] === q.c) correct++; });
-  
-  addPts(correct * 10);
+  pts += correct * 10;
   quizDone = true;
-  
   toast('🎉 ' + correct + '/5 • +' + (correct*10) + ' pts !');
   saveAll();
   updateUI();
 });
 
-// ==========================================
-// ROUE + PUB PI (VRAIE API)
-// ==========================================
+// ========== ROUE + PUB PI (API OFFICIELLE) ==========
 function drawWheel() {
   const prizes = [5,10,15,20,25,50,100];
   const colors = ['#1d3322','#234027','#2c4f30','#3a5c33','#b88f2f','#e8b84b','#ff5d4d'];
@@ -432,7 +374,7 @@ function drawWheel() {
   document.getElementById('wheelSvg').innerHTML = svg;
 }
 
-// Fonction pour afficher la pub Pi (API officielle)
+// FONCTION PUB PI - LA VRAIE API
 async function showPiAd() {
   const overlay = document.getElementById('adOverlay');
   const statusEl = document.getElementById('adStatus');
@@ -445,65 +387,67 @@ async function showPiAd() {
   errorEl.textContent = '';
   spinnerEl.style.display = 'block';
   
-  if (PiReady) {
+  // Vérifier si Pi.Ads existe
+  if (PiReady && PiNetwork && PiNetwork.Ads) {
+    console.log('✅ Pi.Ads disponible, tentative de pub...');
+    
     try {
-      // Vérifier si une pub est prête
+      // Étape 1 : Vérifier si une pub est prête
       statusEl.textContent = '🔍 Vérification...';
-      const isAdReadyResponse = await Pi.Ads.isAdReady("interstitial");
+      const isAdReadyResponse = await PiNetwork.Ads.isAdReady("interstitial");
       console.log('isAdReady:', isAdReadyResponse);
       
       if (isAdReadyResponse.ready === true) {
-        // Pub prête -> l'afficher
+        // Étape 2a : Afficher la pub prête
         statusEl.textContent = '📺 Affichage de la pub...';
-        await Pi.Ads.showAd("interstitial");
+        await PiNetwork.Ads.showAd("interstitial");
         console.log('✅ Pub affichée directement');
       } else {
-        // Charger une nouvelle pub
-        statusEl.textContent = '📥 Chargement d\'une pub...';
-        const requestAdResponse = await Pi.Ads.requestAd("interstitial");
+        // Étape 2b : Charger une nouvelle pub
+        statusEl.textContent = '📥 Téléchargement de la pub...';
+        const requestAdResponse = await PiNetwork.Ads.requestAd("interstitial");
         console.log('requestAd:', requestAdResponse);
         
-        if (requestAdResponse.result !== "AD_LOADED") {
-          throw new Error("Impossible de charger la pub");
-        }
-        
-        // Afficher la pub chargée
-        statusEl.textContent = '📺 Affichage de la pub...';
-        const showAdResponse = await Pi.Ads.showAd("interstitial");
-        console.log('showAd:', showAdResponse);
-        
-        if (showAdResponse.result !== "AD_CLOSED") {
-          throw new Error("La pub n'a pas pu être affichée");
+        if (requestAdResponse.result === "AD_LOADED") {
+          // Étape 3 : Afficher la pub chargée
+          statusEl.textContent = '📺 Affichage de la pub...';
+          const showAdResponse = await PiNetwork.Ads.showAd("interstitial");
+          console.log('showAd:', showAdResponse);
+          
+          if (showAdResponse.result === "AD_CLOSED") {
+            console.log('✅ Pub fermée normalement');
+          }
+        } else {
+          console.log('⚠️ Pub non chargée');
         }
       }
       
       statusEl.textContent = '✅ Pub terminée !';
       statusEl.style.color = '#3ddc84';
-      spinnerEl.style.display = 'none';
       
     } catch (error) {
       console.error('❌ Erreur pub Pi:', error);
       statusEl.textContent = '⚠️ Pub non disponible';
       statusEl.style.color = '#ff5d4d';
       errorEl.textContent = 'Mode démo - La roue va tourner';
-      spinnerEl.style.display = 'none';
     }
   } else {
-    // Mode démo
+    // Pi.Ads pas disponible
+    console.log('⚠️ Pi.Ads non disponible, mode démo');
     statusEl.textContent = '📺 Mode démo';
-    statusEl.style.color = '#ffd166';
     errorEl.textContent = 'La roue va tourner dans 2 secondes...';
-    spinnerEl.style.display = 'none';
   }
   
-  // Attendre 2 secondes pour que l'utilisateur voie le message
+  spinnerEl.style.display = 'none';
+  
+  // Attendre un peu pour que l'utilisateur voie
   await new Promise(resolve => setTimeout(resolve, 2000));
   overlay.classList.remove('show');
 }
 
 document.getElementById('btnSpin').addEventListener('click', async function() {
   if (wheelDone) {
-    toast('⚠️ Roue déjà tournée aujourd\'hui');
+    toast('⚠️ Déjà tournée');
     return;
   }
   
@@ -534,23 +478,18 @@ document.getElementById('btnSpin').addEventListener('click', async function() {
       if (angle >= start && angle < acc) prize = prizes[i];
     });
     
-    addPts(prize);
+    pts += prize;
     wheelDone = true;
     btn.textContent = '✅ Déjà tournée';
-    toast('🎉 +' + prize + ' points gagnés !');
+    toast('🎉 +' + prize + ' points !');
     saveAll();
     updateUI();
   }, 3500);
 });
 
-// ==========================================
-// TIR AU BUT
-// ==========================================
+// ========== TIR ==========
 function shoot(zone) {
-  if (shootDone) {
-    toast('⚠️ Tir déjà effectué aujourd\'hui');
-    return;
-  }
+  if (shootDone) { toast('⚠️ Déjà tiré'); return; }
   
   const zones = ['gauche', 'centre', 'droite'];
   const keeper = zones[Math.floor(Math.random() * 3)];
@@ -558,14 +497,13 @@ function shoot(zone) {
   
   if (zone !== keeper) {
     const p = Math.floor(Math.random() * 21) + 10;
-    addPts(p);
+    pts += p;
     el.innerHTML = '⚽ BUT ! +' + p + ' pts';
     el.style.color = '#3ddc84';
     toast('⚽ +' + p + ' points !');
   } else {
-    el.innerHTML = '😞 Arrêté par le gardien !';
+    el.innerHTML = '😞 Arrêté !';
     el.style.color = '#ff5d4d';
-    toast('😞 Arrêté !');
   }
   
   shootDone = true;
@@ -573,24 +511,21 @@ function shoot(zone) {
   updateUI();
 }
 
-// ==========================================
-// SHOP
-// ==========================================
+// ========== SHOP ==========
 function renderShop() {
   const items = [
-    { id: 'extra_wheel', name: '🎡 Tour de roue extra', desc: 'Relance la roue', cost: 150 },
-    { id: 'extra_shoot', name: '🥅 Tir au but extra', desc: 'Un tir supplémentaire', cost: 100 },
-    { id: 'multiplier_2x', name: '🚀 Multiplicateur x2', desc: 'Points doublés pendant 30 min', cost: 200 }
+    { id: 'extra_wheel', name: '🎡 Tour de roue', cost: 150 },
+    { id: 'extra_shoot', name: '🥅 Tir au but', cost: 100 }
   ];
   
   let html = '';
   items.forEach(item => {
     const owned = inventory[item.id] || 0;
     html += '<div style="display:flex;align-items:center;gap:10px;padding:10px;background:rgba(255,255,255,0.03);border-radius:10px;margin:5px 0;">';
-    html += '<div style="flex:1;"><strong>' + item.name + '</strong><br><span style="font-size:11px;color:#888;">' + item.desc + '</span>';
-    if (owned > 0) html += '<br><span style="color:#8c3ce0;font-size:10px;">x' + owned + ' possédé(s)</span>';
+    html += '<div style="flex:1;"><strong>' + item.name + '</strong>';
+    if (owned > 0) html += '<br><span style="color:#8c3ce0;font-size:10px;">x' + owned + '</span>';
     html += '</div>';
-    html += '<div><div style="color:#ffd166;font-weight:700;margin-bottom:5px;">' + item.cost + ' pts</div>';
+    html += '<div><div style="color:#ffd166;font-weight:700;">' + item.cost + ' pts</div>';
     html += '<button class="btn-green" style="padding:6px 10px;font-size:11px;" onclick="buyItem(\'' + item.id + '\')">Acheter</button></div>';
     html += '</div>';
   });
@@ -599,7 +534,32 @@ function renderShop() {
   let invHtml = '';
   Object.entries(inventory).forEach(([key, value]) => {
     if (value > 0) {
-      const allItems = items;
-      const item = allItems.find(i => i.id === key);
+      const item = items.find(i => i.id === key);
       if (item) {
-        invHtml += '<div style="display:flex;justify-content:space-between;align-items:
+        invHtml += '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px;background:rgba(255,255,255,0.03);border-radius:8px;margin:3px 0;">';
+        invHtml += '<span>' + item.name + ' <span style="color:#8c3ce0;">x' + value + '</span></span>';
+        invHtml += '<button class="btn-yellow" style="padding:6px 10px;font-size:11px;width:auto;" onclick="useItem(\'' + key + '\')">Utiliser</button>';
+        invHtml += '</div>';
+      }
+    }
+  });
+  document.getElementById('inventoryList').innerHTML = invHtml || '<p style="color:#888;font-size:12px;">Vide</p>';
+}
+
+function buyItem(id) {
+  const prices = { extra_wheel: 150, extra_shoot: 100 };
+  if (pts >= prices[id]) {
+    pts -= prices[id];
+    inventory[id] = (inventory[id] || 0) + 1;
+    toast('✅ Acheté !');
+    saveAll();
+    updateUI();
+  } else {
+    toast('❌ Pas assez de points');
+  }
+}
+
+function useItem(id) {
+  if (inventory[id] > 0) {
+    inventory[id]--;
+    if (id === 'extra_wheel') { whee
