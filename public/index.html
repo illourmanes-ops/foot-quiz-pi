@@ -401,7 +401,7 @@
 
 <header>
   <h1>⚽ Foot Quiz Pi</h1>
-  <p id="headerSubtitle"></p>
+  <p id="headerSubtitle">Quiz du jour • Roue de la chance • Tirs au but • Classement</p>
 </header>
 
 <div class="scoreboard">
@@ -421,72 +421,74 @@
 
 <main>
 
+  <!-- Carte de connexion (visible par défaut) -->
   <div class="card" id="loginCard">
-    <h2>🔐 <span id="lblLoginTitle"></span></h2>
-    <p class="desc" id="lblLoginDesc"></p>
-    <button class="btn-primary" id="loginBtn"></button>
+    <h2>🔐 Connexion</h2>
+    <p class="desc">Connecte-toi avec Pi Network pour jouer et garder tes points.</p>
+    <button class="btn-primary" id="loginBtn">Se connecter avec Pi</button>
   </div>
 
+  <!-- Les autres cartes (cachées par défaut) -->
   <div class="card" id="testPaymentCard" style="display:none;">
-    <h2>💳 <span id="lblTestPayTitle"></span></h2>
-    <p class="desc" id="lblTestPayDesc"></p>
-    <button class="btn-primary" id="testPaymentBtn"></button>
+    <h2>💳 Test de paiement</h2>
+    <p class="desc">Effectue un petit paiement test (0.01 Pi) pour valider la configuration de ton app.</p>
+    <button class="btn-primary" id="testPaymentBtn">Payer 0.01 Pi (test)</button>
   </div>
 
   <div class="card" id="quizCard" style="display:none;">
-    <h2>🧠 <span id="lblQuizTitle"></span></h2>
-    <p class="desc" id="lblQuizDesc"></p>
-    <div class="quiz-progress" id="quizProgress"></div>
+    <h2>🧠 Quiz du jour</h2>
+    <p class="desc">5 questions, 10 points par bonne réponse.</p>
+    <div class="quiz-progress" id="quizProgress">Question 1/5</div>
     <div class="quiz-bar">
       <div class="quiz-bar-fill" id="quizBarFill" style="width: 0%;"></div>
     </div>
     <div id="quizContainer"></div>
     <div class="quiz-nav">
-      <button class="btn-ghost" id="prevQuestionBtn" style="display:none;"></button>
-      <button class="btn-ghost" id="nextQuestionBtn" style="display:none;"></button>
+      <button class="btn-ghost" id="prevQuestionBtn" style="display:none;">← Précédent</button>
+      <button class="btn-ghost" id="nextQuestionBtn" style="display:none;">Suivant →</button>
     </div>
-    <button class="btn-primary" id="submitQuizBtn" style="display:none;"></button>
+    <button class="btn-primary" id="submitQuizBtn" style="display:none;">Valider mes réponses</button>
   </div>
 
   <div class="card wheel-zone" id="wheelCard" style="display:none;">
-    <h2 style="justify-content:center;">🎡 <span id="lblWheelTitle"></span></h2>
+    <h2 style="justify-content:center;">🎡 Roue quotidienne</h2>
     <div class="wheel-wrap">
       <div class="wheel-pointer"></div>
       <svg id="wheelSvg" width="220" height="220" viewBox="0 0 100 100"></svg>
     </div>
-    <button class="btn-primary" id="spinBtn"></button>
+    <button class="btn-primary" id="spinBtn">Regarder une pub et tourner</button>
   </div>
 
   <div class="card" id="shootCard" style="display:none;">
-    <h2>🥅 <span id="lblShootTitle"></span></h2>
-    <p class="desc" id="lblShootDesc"></p>
+    <h2>🥅 Tirs au but</h2>
+    <p class="desc">Choisis ta zone de tir. Si le gardien ne devine pas, tu marques entre 10 et 30 points !</p>
     <div class="goal-wrap">
       <div class="goal-frame">
         <span class="ball-emoji" id="ballEmoji">⚽</span>
       </div>
       <div class="zone-buttons">
-        <button id="zoneGauche" data-zone="gauche"></button>
-        <button id="zoneCentre" data-zone="centre"></button>
-        <button id="zoneDroite" data-zone="droite"></button>
+        <button id="zoneGauche" data-zone="gauche">⬅️ Gauche</button>
+        <button id="zoneCentre" data-zone="centre">⬆️ Centre</button>
+        <button id="zoneDroite" data-zone="droite">➡️ Droite</button>
       </div>
     </div>
     <p style="text-align:center; margin-top:10px; color: var(--gold-dim);" id="shootResult"></p>
   </div>
 
   <div class="card" id="packCard" style="display:none;">
-    <h2>📦 <span id="lblPackTitle"></span></h2>
-    <p class="desc" id="lblPackDesc"></p>
-    <button class="btn-primary" id="buyPackBtn"></button>
+    <h2>📦 Pack Bonus</h2>
+    <p class="desc">Soutiens l'app et reçois 100 points bonus instantanément pour 0.1 Pi.</p>
+    <button class="btn-primary" id="buyPackBtn">Acheter pour 0.1 Pi</button>
   </div>
 
   <div class="card" id="shareCard" style="display:none; text-align:center;">
-    <h2 style="justify-content:center;">📣 <span id="lblShareTitle"></span></h2>
-    <p class="desc" id="lblShareDesc"></p>
+    <h2 style="justify-content:center;">📣 Invite tes amis</h2>
+    <p class="desc">Partage l'app et défie tes amis au quiz foot du jour !</p>
     <button id="shareBtn" style="background:#25d366; color:white;">📱 WhatsApp</button>
   </div>
 
   <div class="card" id="leaderboardCard" style="display:none;">
-    <h2>🏆 <span id="lblLeaderboardTitle"></span></h2>
+    <h2>🏆 Classement</h2>
     <ul class="leaderboard-list" id="leaderboardList"></ul>
   </div>
 
@@ -497,6 +499,18 @@
 <script>
 // ===================== CONFIGURATION =====================
 const API_BASE = "https://foot-quiz-pi.onrender.com";
+
+// Initialiser Pi SDK avec gestion d'erreur
+try {
+  if (typeof Pi !== 'undefined') {
+    Pi.init({ version: "2.0", sandbox: true });
+    console.log('✅ Pi SDK initialisé');
+  } else {
+    console.log('⚠️ Pi SDK non disponible - mode test activé');
+  }
+} catch (e) {
+  console.log('⚠️ Erreur Pi.init - mode test activé:', e.message);
+}
 
 // ===================== TRADUCTIONS =====================
 const translations = {
@@ -590,16 +604,6 @@ function t(key) {
 }
 
 function applyTranslations() {
+  // Mise à jour des textes fixes
   document.getElementById('headerSubtitle').textContent = t('subtitle');
-  document.getElementById('lblPlayer').textContent = t('player');
-  document.getElementById('lblStreak').textContent = t('streak');
-  document.getElementById('lblPoints').textContent = t('points');
-  document.getElementById('lblLoginTitle').textContent = t('loginTitle');
-  document.getElementById('lblLoginDesc').textContent = t('loginDesc');
-  document.getElementById('loginBtn').textContent = t('loginBtn');
-  document.getElementById('lblTestPayTitle').textContent = t('testPayTitle');
-  document.getElementById('lblTestPayDesc').textContent = t('testPayDesc');
-  document.getElementById('testPaymentBtn').textContent = t('testPayBtn');
-  document.getElementById('lblQuizTitle').textContent = t('quizTitle');
-  document.getElementById('lblQuizDesc').textContent = t('quizDesc');
-  document.getElementById('submitQuizBtn').textContent = t
+  document.getElement
