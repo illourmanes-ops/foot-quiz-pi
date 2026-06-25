@@ -413,6 +413,8 @@ let currentLang = localStorage.getItem('fqp_lang') || 'fr';
 
 function applyTranslations() {
   const t = translations[currentLang];
+  if (!t) return;
+  
   document.getElementById('headerSubtitle').textContent = t.subtitle;
   document.getElementById('lblPlayer').textContent = t.player;
   document.getElementById('lblStreak').textContent = t.streak;
@@ -444,17 +446,6 @@ function applyTranslations() {
     b.classList.toggle('active', b.dataset.lang === currentLang);
   });
 }
-
-document.querySelectorAll('#langBar button').forEach(b => {
-  b.addEventListener('click', () => {
-    currentLang = b.dataset.lang;
-    localStorage.setItem('fqp_lang', currentLang);
-    applyTranslations();
-    if (currentQuiz && currentQuiz.length) renderCurrentQuestion();
-  });
-});
-
-applyTranslations();
 
 // ===================== APP =====================
 let currentUsername = null;
@@ -500,4 +491,9 @@ function polarPoint(angleDeg, radius) {
 function renderWheel() {
   const svg = document.getElementById('wheelSvg');
   const R = 48;
-  let html = `<circle cx="50" cy="50" r="49" fill="#0a1a
+  let html = `<circle cx="50" cy="50" r="49" fill="#0a1a0e" stroke="#e8b84b" stroke-width="2"/>`;
+  wheelSegments.forEach(seg => {
+    const p1 = polarPoint(seg.start, R);
+    const p2 = polarPoint(seg.end, R);
+    const largeArc = (seg.end - seg.start) > 180 ? 1 : 0;
+    html += `<path d="M50,50 L${p1.x.toFixed(2)},${p1.y.toFixed(2)} A${R},$
