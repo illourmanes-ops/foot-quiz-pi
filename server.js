@@ -12,7 +12,7 @@ const PI_API_BASE = "https://api.minepi.com/v2";
 app.use(cors());
 app.use(bodyParser.json());
 
-// Rend les fichiers de la racine accessibles (index.html)
+// Permet de lire index.html directement à la racine
 app.use(express.static(__dirname));
 
 const questionBank = [
@@ -85,10 +85,9 @@ app.post('/api/pi/complete', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// Route par défaut qui distribue l'index.html
+// Envoie l'index.html pour toutes les autres requêtes
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 app.listen(PORT, () => console.log(`Serveur actif sur le port ${PORT}`));
-(
