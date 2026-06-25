@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Foot Quiz Pi</title>
+<script src="https://sdk.minepi.com/pi-sdk.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -24,6 +25,7 @@
     margin: 5px 0;
   }
   button:active { transform: scale(0.96); }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
   
   .btn-yellow { background: #e8b84b; color: #1a1208; }
   .btn-purple { background: #8c3ce0; color: white; }
@@ -86,10 +88,27 @@
     top: 0; left: 0; right: 0; bottom: 0;
     background: rgba(0,0,0,0.95);
     z-index: 1000;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
     text-align: center;
-    padding-top: 40%;
   }
-  .ad-overlay.show { display: block; }
+  .ad-overlay.show { display: flex; }
+  
+  .ad-spinner {
+    width: 60px;
+    height: 60px;
+    border: 4px solid rgba(255,255,255,0.1);
+    border-top: 4px solid #8c3ce0;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 20px;
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
 </style>
 </head>
 <body>
@@ -107,40 +126,49 @@
   </div>
   <div>
     <div class="label">SÉRIE</div>
-    <div class="value" id="streakDisplay">0</div>
+    <div class="value" id="streakDisplay">0 🔥</div>
   </div>
 </div>
 
-<!-- LOGIN - VERSION SIMPLE -->
+<!-- LOGIN -->
 <div class="card" id="cardLogin">
   <h2>🔐 Connexion</h2>
-  <p>Entre ton pseudo pour jouer</p>
-  <input type="text" id="pseudoInput" placeholder="Ton pseudo..." 
+  <p>Connecte-toi avec Pi Network ou entre ton pseudo</p>
+  <button class="btn-purple" id="btnLoginPi">🪙 Se connecter avec Pi</button>
+  <p style="text-align:center; color:#888;">— ou —</p>
+  <input type="text" id="pseudoInput" placeholder="Entre ton pseudo..." 
          style="width:100%; padding:14px; border-radius:10px; border:1px solid #e8b84b; 
                 background:rgba(255,255,255,0.1); color:white; font-size:16px; margin-bottom:10px;">
-  <button class="btn-yellow" id="btnPlay">⚽ JOUER !</button>
+  <button class="btn-yellow" id="btnLoginDemo">👤 Jouer avec ce pseudo</button>
 </div>
 
 <!-- QUIZ -->
 <div class="card" id="cardQuiz" style="display:none;">
-  <h2>🧠 Quiz</h2>
+  <h2>🧠 Quiz du jour</h2>
   <p id="quizProgress">Question 1/5</p>
   <div id="quizArea"></div>
-  <button class="btn-yellow" id="btnSubmitQuiz">Valider</button>
+  <div style="display:flex; gap:5px;">
+    <button id="btnPrev" style="display:none;">←</button>
+    <button id="btnNext" style="display:none;">→</button>
+  </div>
+  <button class="btn-yellow" id="btnSubmitQuiz">✅ Valider (10 pts/bonne réponse)</button>
 </div>
 
 <!-- ROUE -->
 <div class="card" id="cardWheel" style="display:none; text-align:center;">
-  <h2>🎡 Roue</h2>
-  <div style="width:180px; height:180px; margin:0 auto;">
+  <h2>🎡 Roue quotidienne</h2>
+  <p>Regarde une pub Pi pour tourner !</p>
+  <div style="width:180px; height:180px; margin:0 auto 15px; position:relative;">
+    <div style="position:absolute; top:-8px; left:50%; margin-left:-8px; width:0; height:0; border-left:8px solid transparent; border-right:8px solid transparent; border-top:14px solid #ffd166; z-index:2;"></div>
     <svg id="wheelSvg" width="180" height="180" viewBox="0 0 100 100"></svg>
   </div>
-  <button class="btn-purple" id="btnSpin">📺 Voir pub et tourner</button>
+  <button class="btn-purple" id="btnSpin">📺 Voir la pub Pi et tourner</button>
 </div>
 
 <!-- TIR -->
 <div class="card" id="cardShoot" style="display:none;">
   <h2>🥅 Tir au but</h2>
+  <p>Choisis ta zone ! 10-30 points si tu marques</p>
   <div style="border:3px solid white; border-bottom:none; height:70px; max-width:250px; margin:0 auto; display:flex; align-items:flex-end; justify-content:center; font-size:30px;">⚽</div>
   <div style="display:flex; gap:5px; margin-top:10px;">
     <button onclick="shoot('gauche')">⬅️ Gauche</button>
@@ -158,17 +186,42 @@
   <div id="inventoryList"></div>
 </div>
 
-<div class="toast" id="toast"></div>
-
-<!-- OVERLAY PUB -->
-<div class="ad-overlay" id="adOverlay">
-  <h2 style="color:#ffd166;">📺 Publicité</h2>
-  <p style="color:white; font-size:30px;" id="adCountdown">3</p>
-  <p style="color:#aaa;">La roue va tourner...</p>
+<!-- PACK PI -->
+<div class="card" id="cardPack" style="display:none;">
+  <h2>📦 Pack Pi</h2>
+  <p>Achète des points avec Pi</p>
+  <button class="btn-purple" onclick="addPts(100); toast('✅ +100 points !');">🪙 100 pts = 0.1 Pi</button>
+  <button class="btn-purple" onclick="addPts(500); toast('✅ +500 points !');">🪙 500 pts = 0.5 Pi</button>
 </div>
 
+<!-- OVERLAY PUB PI -->
+<div class="ad-overlay" id="adOverlay">
+  <div style="background:#111; border:2px solid #8c3ce0; border-radius:20px; padding:30px; max-width:350px; text-align:center;">
+    <div class="ad-spinner" id="adSpinner"></div>
+    <p style="color:#ffd166; font-size:18px;" id="adStatus">📺 Chargement de la pub Pi...</p>
+    <p style="color:#ff5d4d; font-size:14px;" id="adError"></p>
+    <p style="color:#888; font-size:12px;">La roue tournera après la pub</p>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
 <script>
-// ========== DONNÉES SIMPLES ==========
+// ==========================================
+// INIT PI NETWORK
+// ==========================================
+let PiReady = false;
+try {
+  Pi.init({ version: "2.0", sandbox: true });
+  PiReady = true;
+  console.log('✅ Pi SDK prêt - Mode SANDBOX');
+} catch(e) {
+  console.log('⚠️ Pi SDK non disponible - Mode démo');
+}
+
+// ==========================================
+// DONNÉES
+// ==========================================
 let name = null;
 let pts = 0;
 let streak = 0;
@@ -178,33 +231,30 @@ let shootDone = false;
 let quiz = [];
 let answers = [];
 let qIndex = 0;
-let inventory = { extra_wheel: 0, extra_shoot: 0 };
+let inventory = { extra_wheel: 0, extra_shoot: 0, multiplier_2x: 0 };
 
-// Charger depuis localStorage
 const saved = localStorage.getItem('fqp_save');
 if (saved) {
   try {
     const data = JSON.parse(saved);
     name = data.name;
-    pts = data.pts;
-    streak = data.streak;
-    quizDone = data.quizDone;
-    wheelDone = data.wheelDone;
-    shootDone = data.shootDone;
-    inventory = data.inventory || inventory;
+    pts = data.pts || 0;
+    streak = data.streak || 0;
+    quizDone = data.quizDone || false;
+    wheelDone = data.wheelDone || false;
+    shootDone = data.shootDone || false;
+    inventory = data.inventory || { extra_wheel: 0, extra_shoot: 0, multiplier_2x: 0 };
   } catch(e) {}
 }
 
-// Questions
 const questions = [
   { q: "Qui a gagné le Mondial 2022 ?", o: ["France","Brésil","Argentine","Allemagne"], c: 2 },
   { q: "Joueurs dans une équipe ?", o: ["9","10","11","12"], c: 2 },
-  { q: "Plus de LDC ?", o: ["Barça","Real","Bayern","Liverpool"], c: 1 },
-  { q: "Football codifié en ?", o: ["France","Italie","Brésil","Angleterre"], c: 3 },
+  { q: "Plus de Ligues des Champions ?", o: ["Barça","Real Madrid","Bayern","Liverpool"], c: 1 },
+  { q: "Football codifié où ?", o: ["France","Italie","Brésil","Angleterre"], c: 3 },
   { q: "Surnom de Messi ?", o: ["CR7","Neymar","La Pulga","Mbappé"], c: 2 }
 ];
 
-// Vérifier nouveau jour
 const today = new Date().toDateString();
 if (localStorage.getItem('fqp_date') !== today) {
   quizDone = false;
@@ -214,12 +264,21 @@ if (localStorage.getItem('fqp_date') !== today) {
   localStorage.setItem('fqp_date', today);
 }
 
-// ========== FONCTIONS SIMPLES ==========
+// ==========================================
+// FONCTIONS
+// ==========================================
 function toast(msg) {
+  console.log('🔔', msg);
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.className = 'toast show';
-  setTimeout(() => t.className = 'toast', 2500);
+  setTimeout(() => t.className = 'toast', 3000);
+}
+
+function addPts(amount) {
+  pts += amount;
+  saveAll();
+  updateUI();
 }
 
 function saveAll() {
@@ -229,41 +288,76 @@ function saveAll() {
   localStorage.setItem('fqp_date', today);
 }
 
+function doLogin(username) {
+  name = username;
+  toast('✅ Bienvenue ' + name + ' !');
+  saveAll();
+  updateUI();
+}
+
 function updateUI() {
   document.getElementById('nameDisplay').textContent = name || '—';
   document.getElementById('ptsDisplay').textContent = pts;
-  document.getElementById('streakDisplay').textContent = streak;
+  document.getElementById('streakDisplay').textContent = streak + ' 🔥';
   
-  document.getElementById('cardLogin').style.display = name ? 'none' : 'block';
-  document.getElementById('cardQuiz').style.display = name ? 'block' : 'none';
-  document.getElementById('cardWheel').style.display = name ? 'block' : 'none';
-  document.getElementById('cardShoot').style.display = name ? 'block' : 'none';
-  document.getElementById('cardShop').style.display = name ? 'block' : 'none';
+  const ok = !!name;
+  document.getElementById('cardLogin').style.display = ok ? 'none' : 'block';
+  document.getElementById('cardQuiz').style.display = ok ? 'block' : 'none';
+  document.getElementById('cardWheel').style.display = ok ? 'block' : 'none';
+  document.getElementById('cardShoot').style.display = ok ? 'block' : 'none';
+  document.getElementById('cardShop').style.display = ok ? 'block' : 'none';
+  document.getElementById('cardPack').style.display = ok ? 'block' : 'none';
   
-  if (name && !quizDone) startQuiz();
+  if (ok && !quizDone) startQuiz();
   
   if (wheelDone) {
     document.getElementById('btnSpin').textContent = '✅ Déjà tournée';
     document.getElementById('btnSpin').disabled = true;
+  } else {
+    document.getElementById('btnSpin').textContent = '📺 Voir la pub Pi et tourner';
+    document.getElementById('btnSpin').disabled = false;
   }
   
   renderShop();
 }
 
-// ========== LOGIN - DIRECT ==========
-document.getElementById('btnPlay').addEventListener('click', function() {
-  const pseudo = document.getElementById('pseudoInput').value.trim();
-  if (pseudo) {
-    name = pseudo;
-    toast('✅ Bienvenue ' + name + ' !');
-    saveAll();
-    updateUI();
+// ==========================================
+// LOGIN - 2 BOUTONS
+// ==========================================
+
+// Bouton Pi Network
+document.getElementById('btnLoginPi').addEventListener('click', async function() {
+  console.log('🟣 Clic Connexion Pi');
+  
+  if (PiReady) {
+    try {
+      const auth = await Pi.authenticate(['username', 'payments'], function(payment) {
+        console.log('💳 Paiement:', payment);
+      });
+      doLogin(auth.user.username);
+    } catch(e) {
+      console.error('❌ Erreur Pi:', e);
+      doLogin('Pionnier_' + Math.random().toString(36).substr(2, 5));
+    }
   } else {
-    toast('⚠️ Entre un pseudo !');
+    doLogin('Pionnier_' + Math.random().toString(36).substr(2, 5));
   }
 });
 
-// ========== QUIZ ==========
+// Bouton Démo (pseudo manuel)
+document.getElementById('btnLoginDemo').addEventListener('click', function() {
+  console.log('🟡 Clic Connexion Démo');
+  const pseudo = document.getElementById('pseudoInput').value.trim();
+  if (pseudo) {
+    doLogin(pseudo);
+  } else {
+    doLogin('Joueur_' + Math.random().toString(36).substr(2, 5));
+  }
+});
+
+// ==========================================
+// QUIZ
+// ==========================================
 function startQuiz() {
   quiz = [...questions].sort(() => Math.random() - 0.5);
   answers = [null, null, null, null, null];
@@ -275,11 +369,14 @@ function showQuestion() {
   const q = quiz[qIndex];
   document.getElementById('quizProgress').textContent = 'Question ' + (qIndex+1) + '/5';
   
-  let h = '<p style="font-weight:700;">' + q.q + '</p>';
+  let h = '<p style="font-weight:700; margin-bottom:10px;">' + q.q + '</p>';
   q.o.forEach((opt, i) => {
     h += '<button class="option-btn' + (answers[qIndex] === i ? ' selected' : '') + '" onclick="pickAnswer(' + i + ')">' + opt + '</button>';
   });
   document.getElementById('quizArea').innerHTML = h;
+  
+  document.getElementById('btnPrev').style.display = qIndex > 0 ? 'inline-block' : 'none';
+  document.getElementById('btnNext').style.display = qIndex < 4 ? 'inline-block' : 'none';
 }
 
 function pickAnswer(i) {
@@ -287,16 +384,24 @@ function pickAnswer(i) {
   showQuestion();
 }
 
+document.getElementById('btnPrev').addEventListener('click', function() {
+  if (qIndex > 0) { qIndex--; showQuestion(); }
+});
+
+document.getElementById('btnNext').addEventListener('click', function() {
+  if (qIndex < 4) { qIndex++; showQuestion(); }
+});
+
 document.getElementById('btnSubmitQuiz').addEventListener('click', function() {
   if (answers.includes(null)) {
-    toast('⚠️ Réponds à toutes les questions');
+    toast('⚠️ Réponds à toutes les questions !');
     return;
   }
   
   let correct = 0;
   quiz.forEach((q, i) => { if (answers[i] === q.c) correct++; });
   
-  pts += correct * 10;
+  addPts(correct * 10);
   quizDone = true;
   
   toast('🎉 ' + correct + '/5 • +' + (correct*10) + ' pts !');
@@ -304,7 +409,9 @@ document.getElementById('btnSubmitQuiz').addEventListener('click', function() {
   updateUI();
 });
 
-// ========== ROUE ==========
+// ==========================================
+// ROUE + PUB PI (VRAIE API)
+// ==========================================
 function drawWheel() {
   const prizes = [5,10,15,20,25,50,100];
   const colors = ['#1d3322','#234027','#2c4f30','#3a5c33','#b88f2f','#e8b84b','#ff5d4d'];
@@ -325,150 +432,174 @@ function drawWheel() {
   document.getElementById('wheelSvg').innerHTML = svg;
 }
 
-document.getElementById('btnSpin').addEventListener('click', function() {
-  if (wheelDone) return;
-  
-  // Afficher compte à rebours pub
+// Fonction pour afficher la pub Pi (API officielle)
+async function showPiAd() {
   const overlay = document.getElementById('adOverlay');
-  const countdown = document.getElementById('adCountdown');
+  const statusEl = document.getElementById('adStatus');
+  const errorEl = document.getElementById('adError');
+  const spinnerEl = document.getElementById('adSpinner');
+  
   overlay.classList.add('show');
+  statusEl.textContent = '📺 Chargement de la pub Pi...';
+  statusEl.style.color = '#ffd166';
+  errorEl.textContent = '';
+  spinnerEl.style.display = 'block';
   
-  let sec = 3;
-  countdown.textContent = sec;
-  
-  const timer = setInterval(() => {
-    sec--;
-    countdown.textContent = sec;
-    if (sec <= 0) {
-      clearInterval(timer);
-      overlay.classList.remove('show');
+  if (PiReady) {
+    try {
+      // Vérifier si une pub est prête
+      statusEl.textContent = '🔍 Vérification...';
+      const isAdReadyResponse = await Pi.Ads.isAdReady("interstitial");
+      console.log('isAdReady:', isAdReadyResponse);
       
-      // Lancer la roue
-      const btn = document.getElementById('btnSpin');
-      btn.disabled = true;
-      btn.textContent = '🎡 Tourne...';
-      
-      const svg = document.getElementById('wheelSvg');
-      const rotation = 360*5 + Math.random()*360;
-      svg.style.transform = 'rotate('+rotation+'deg)';
-      
-      setTimeout(() => {
-        const angle = (360 - (rotation%360))%360;
-        const prizes = [5,10,15,20,25,50,100];
-        const weights = [25,25,20,15,10,4,1];
-        const sum = weights.reduce((a,b)=>a+b,0);
-        let acc = 0, prize = 5;
-        weights.forEach((w, i) => {
-          const start = acc;
-          acc += (w/sum)*360;
-          if (angle >= start && angle < acc) prize = prizes[i];
-        });
+      if (isAdReadyResponse.ready === true) {
+        // Pub prête -> l'afficher
+        statusEl.textContent = '📺 Affichage de la pub...';
+        await Pi.Ads.showAd("interstitial");
+        console.log('✅ Pub affichée directement');
+      } else {
+        // Charger une nouvelle pub
+        statusEl.textContent = '📥 Chargement d\'une pub...';
+        const requestAdResponse = await Pi.Ads.requestAd("interstitial");
+        console.log('requestAd:', requestAdResponse);
         
-        pts += prize;
-        wheelDone = true;
-        btn.textContent = '✅ Déjà tournée';
-        toast('🎉 +'+prize+' points !');
-        saveAll();
-        updateUI();
-      }, 3500);
+        if (requestAdResponse.result !== "AD_LOADED") {
+          throw new Error("Impossible de charger la pub");
+        }
+        
+        // Afficher la pub chargée
+        statusEl.textContent = '📺 Affichage de la pub...';
+        const showAdResponse = await Pi.Ads.showAd("interstitial");
+        console.log('showAd:', showAdResponse);
+        
+        if (showAdResponse.result !== "AD_CLOSED") {
+          throw new Error("La pub n'a pas pu être affichée");
+        }
+      }
+      
+      statusEl.textContent = '✅ Pub terminée !';
+      statusEl.style.color = '#3ddc84';
+      spinnerEl.style.display = 'none';
+      
+    } catch (error) {
+      console.error('❌ Erreur pub Pi:', error);
+      statusEl.textContent = '⚠️ Pub non disponible';
+      statusEl.style.color = '#ff5d4d';
+      errorEl.textContent = 'Mode démo - La roue va tourner';
+      spinnerEl.style.display = 'none';
     }
-  }, 1000);
-});
+  } else {
+    // Mode démo
+    statusEl.textContent = '📺 Mode démo';
+    statusEl.style.color = '#ffd166';
+    errorEl.textContent = 'La roue va tourner dans 2 secondes...';
+    spinnerEl.style.display = 'none';
+  }
+  
+  // Attendre 2 secondes pour que l'utilisateur voie le message
+  await new Promise(resolve => setTimeout(resolve, 2000));
+  overlay.classList.remove('show');
+}
 
-// ========== TIR ==========
-function shoot(zone) {
-  if (shootDone) {
-    toast('⚠️ Déjà tiré');
+document.getElementById('btnSpin').addEventListener('click', async function() {
+  if (wheelDone) {
+    toast('⚠️ Roue déjà tournée aujourd\'hui');
     return;
   }
   
-  const zones = ['gauche','centre','droite'];
-  const keeper = zones[Math.floor(Math.random()*3)];
+  console.log('🎡 Lancement roue + pub...');
+  
+  // Afficher la pub Pi
+  await showPiAd();
+  
+  // Lancer la roue
+  const btn = document.getElementById('btnSpin');
+  btn.disabled = true;
+  btn.textContent = '🎡 La roue tourne...';
+  
+  const svg = document.getElementById('wheelSvg');
+  const rotation = 360 * 5 + Math.random() * 360;
+  svg.style.transform = 'rotate(' + rotation + 'deg)';
+  
+  setTimeout(() => {
+    const angle = (360 - (rotation % 360)) % 360;
+    const prizes = [5, 10, 15, 20, 25, 50, 100];
+    const weights = [25, 25, 20, 15, 10, 4, 1];
+    const sum = weights.reduce((a, b) => a + b, 0);
+    let acc = 0, prize = 5;
+    
+    weights.forEach((w, i) => {
+      const start = acc;
+      acc += (w / sum) * 360;
+      if (angle >= start && angle < acc) prize = prizes[i];
+    });
+    
+    addPts(prize);
+    wheelDone = true;
+    btn.textContent = '✅ Déjà tournée';
+    toast('🎉 +' + prize + ' points gagnés !');
+    saveAll();
+    updateUI();
+  }, 3500);
+});
+
+// ==========================================
+// TIR AU BUT
+// ==========================================
+function shoot(zone) {
+  if (shootDone) {
+    toast('⚠️ Tir déjà effectué aujourd\'hui');
+    return;
+  }
+  
+  const zones = ['gauche', 'centre', 'droite'];
+  const keeper = zones[Math.floor(Math.random() * 3)];
   const el = document.getElementById('shootMsg');
   
   if (zone !== keeper) {
-    const p = Math.floor(Math.random()*21)+10;
-    pts += p;
-    el.innerHTML = '⚽ BUT ! +'+p+' pts';
+    const p = Math.floor(Math.random() * 21) + 10;
+    addPts(p);
+    el.innerHTML = '⚽ BUT ! +' + p + ' pts';
     el.style.color = '#3ddc84';
+    toast('⚽ +' + p + ' points !');
   } else {
-    el.innerHTML = '😞 Arrêté !';
+    el.innerHTML = '😞 Arrêté par le gardien !';
     el.style.color = '#ff5d4d';
+    toast('😞 Arrêté !');
   }
+  
   shootDone = true;
   saveAll();
   updateUI();
 }
 
-// ========== SHOP ==========
+// ==========================================
+// SHOP
+// ==========================================
 function renderShop() {
   const items = [
-    { id: 'extra_wheel', name: '🎡 Tour de roue', cost: 150 },
-    { id: 'extra_shoot', name: '🥅 Tir au but', cost: 100 }
+    { id: 'extra_wheel', name: '🎡 Tour de roue extra', desc: 'Relance la roue', cost: 150 },
+    { id: 'extra_shoot', name: '🥅 Tir au but extra', desc: 'Un tir supplémentaire', cost: 100 },
+    { id: 'multiplier_2x', name: '🚀 Multiplicateur x2', desc: 'Points doublés pendant 30 min', cost: 200 }
   ];
   
   let html = '';
   items.forEach(item => {
-    html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:rgba(255,255,255,0.03);border-radius:8px;margin:5px 0;">';
-    html += '<span>' + item.name + '</span>';
-    html += '<div><span style="color:#ffd166;">' + item.cost + ' pts</span> ';
-    html += '<button class="btn-green" style="padding:6px 10px;font-size:11px;width:auto;" onclick="buyItem(\'' + item.id + '\')">Acheter</button></div>';
+    const owned = inventory[item.id] || 0;
+    html += '<div style="display:flex;align-items:center;gap:10px;padding:10px;background:rgba(255,255,255,0.03);border-radius:10px;margin:5px 0;">';
+    html += '<div style="flex:1;"><strong>' + item.name + '</strong><br><span style="font-size:11px;color:#888;">' + item.desc + '</span>';
+    if (owned > 0) html += '<br><span style="color:#8c3ce0;font-size:10px;">x' + owned + ' possédé(s)</span>';
+    html += '</div>';
+    html += '<div><div style="color:#ffd166;font-weight:700;margin-bottom:5px;">' + item.cost + ' pts</div>';
+    html += '<button class="btn-green" style="padding:6px 10px;font-size:11px;" onclick="buyItem(\'' + item.id + '\')">Acheter</button></div>';
     html += '</div>';
   });
   document.getElementById('shopItems').innerHTML = html;
   
-  let inv = '';
-  if (inventory.extra_wheel > 0) {
-    inv += '<div style="display:flex;justify-content:space-between;padding:8px;background:rgba(255,255,255,0.03);border-radius:8px;margin:3px 0;">';
-    inv += '<span>🎡 Tour de roue x' + inventory.extra_wheel + '</span>';
-    inv += '<button class="btn-yellow" style="padding:6px 10px;font-size:11px;width:auto;" onclick="useItem(\'extra_wheel\')">Utiliser</button>';
-    inv += '</div>';
-  }
-  if (inventory.extra_shoot > 0) {
-    inv += '<div style="display:flex;justify-content:space-between;padding:8px;background:rgba(255,255,255,0.03);border-radius:8px;margin:3px 0;">';
-    inv += '<span>🥅 Tir au but x' + inventory.extra_shoot + '</span>';
-    inv += '<button class="btn-yellow" style="padding:6px 10px;font-size:11px;width:auto;" onclick="useItem(\'extra_shoot\')">Utiliser</button>';
-    inv += '</div>';
-  }
-  document.getElementById('inventoryList').innerHTML = inv || '<p style="color:#888;font-size:12px;">Vide</p>';
-}
-
-function buyItem(id) {
-  const prices = { extra_wheel: 150, extra_shoot: 100 };
-  if (pts >= prices[id]) {
-    pts -= prices[id];
-    inventory[id]++;
-    toast('✅ Acheté !');
-    saveAll();
-    updateUI();
-  } else {
-    toast('❌ Pas assez de points');
-  }
-}
-
-function useItem(id) {
-  if (inventory[id] > 0) {
-    inventory[id]--;
-    if (id === 'extra_wheel') {
-      wheelDone = false;
-      document.getElementById('btnSpin').textContent = '📺 Voir pub et tourner';
-      document.getElementById('btnSpin').disabled = false;
-      toast('🎡 Tour de roue disponible !');
-    }
-    if (id === 'extra_shoot') {
-      shootDone = false;
-      document.getElementById('shootMsg').textContent = '';
-      toast('🥅 Tir disponible !');
-    }
-    saveAll();
-    updateUI();
-  }
-}
-
-// ========== INIT ==========
-drawWheel();
-updateUI();
-console.log('✅ PRÊT - Entre ton pseudo et clique sur JOUER');
-</script>
-</body>
-</html>
+  let invHtml = '';
+  Object.entries(inventory).forEach(([key, value]) => {
+    if (value > 0) {
+      const allItems = items;
+      const item = allItems.find(i => i.id === key);
+      if (item) {
+        invHtml += '<div style="display:flex;justify-content:space-between;align-items:
