@@ -31,9 +31,6 @@
   .btn-yellow { background: linear-gradient(135deg, #ffd166, #b88f2f); color: #1a1208; }
   .btn-purple { background: linear-gradient(135deg, #a855f7, #7c3aed); color: white; }
   .btn-green { background: linear-gradient(135deg, #3ddc84, #22c55e); color: #1a1208; }
-  .btn-red { background: linear-gradient(135deg, #ff5d4d, #ef4444); color: white; }
-  .btn-blue { background: linear-gradient(135deg, #4a9eff, #3b82f6); color: white; }
-  .btn-orange { background: linear-gradient(135deg, #ff8c42, #f97316); color: white; }
   .btn-gold { background: linear-gradient(135deg, #ffd700, #fbbf24); color: #1a1208; font-size: 18px; padding: 18px; animation: glow 2s infinite; }
   
   @keyframes glow {
@@ -91,22 +88,12 @@
   .ad-overlay.show { display: flex; }
   
   .calendar-grid {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 5px;
-    margin: 10px 0;
+    display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin: 10px 0;
   }
   .calendar-day {
-    aspect-ratio: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    border-radius: 8px;
-    font-size: 11px;
-    font-weight: 700;
-    border: 1px solid rgba(255,255,255,0.1);
-    background: rgba(255,255,255,0.03);
+    aspect-ratio: 1; display: flex; flex-direction: column; align-items: center;
+    justify-content: center; border-radius: 8px; font-size: 10px; font-weight: 700;
+    border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.03);
   }
   .calendar-day.claimed { background: #3ddc84; color: #1a1208; }
   .calendar-day.today { border: 2px solid #ffd166; animation: pulse 1.5s infinite; }
@@ -115,16 +102,12 @@
   @keyframes pulse { 0%,100% { border-color: #ffd166; } 50% { border-color: #fbbf24; } }
   
   .achievement {
-    display: flex; align-items: center; gap: 10px;
-    padding: 8px; border-radius: 8px; margin: 3px 0;
-    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+    display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 8px;
+    margin: 3px 0; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
   }
   .achievement.unlocked { background: rgba(61,220,132,0.1); border-color: #3ddc84; }
   
-  .jackpot-display {
-    font-size: 40px; font-weight: 700; color: #ffd700;
-    text-align: center; animation: glow 1s infinite;
-  }
+  .jackpot-display { font-size: 40px; font-weight: 700; color: #ffd700; text-align: center; }
   
   .nav-tabs { display: flex; gap: 4px; margin-bottom: 10px; flex-wrap: wrap; }
   .nav-tab {
@@ -138,14 +121,6 @@
     background: rgba(255,255,255,0.05); border: 1px dashed #e8b84b;
     padding: 10px; border-radius: 8px; word-break: break-all;
     font-size: 11px; color: #ffd166; margin: 10px 0;
-  }
-  
-  .streak-fire { font-size: 24px; animation: bounce 0.5s infinite; }
-  @keyframes bounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-
-  .confetti {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    pointer-events: none; z-index: 9999;
   }
 </style>
 </head>
@@ -161,20 +136,19 @@
   <div><div class="label">SÉRIE</div><div class="value" id="streakDisplay">0 🔥</div></div>
 </div>
 
-<div id="confettiContainer" class="confetti"></div>
-
 <!-- LOGIN -->
 <div class="card" id="cardLogin">
   <h2>🔐 Bienvenue sur Foot Quiz Pi</h2>
   <p>Le jeu de football qui te récompense en Pi !</p>
   <button class="btn-gold" id="btnLogin">🪙 Se connecter avec Pi Network</button>
+  <button class="btn-yellow" id="btnLoginDemo" style="margin-top:5px;">👤 Connexion rapide (démo)</button>
   <p style="text-align:center; font-size:11px; color:#666; margin-top:8px;">
     ✓ Quiz quotidien &nbsp; ✓ Roue de la chance &nbsp; ✓ Tirs au but<br>
     ✓ Missions &nbsp; ✓ Boutique &nbsp; ✓ Calendrier &nbsp; ✓ Succès
   </p>
 </div>
 
-<!-- CALENDRIER QUOTIDIEN -->
+<!-- CALENDRIER -->
 <div class="card" id="cardCalendar" style="display:none;">
   <h2>📅 Calendrier du mois</h2>
   <p>Connecte-toi chaque jour pour des récompenses !</p>
@@ -247,7 +221,7 @@
   <h2>👥 Parraine tes amis</h2>
   <p>Gagne 50 points par ami qui rejoint !</p>
   <div class="referral-link" id="referralLink"></div>
-  <button class="btn-blue" onclick="copyReferral()">📋 Copier le lien</button>
+  <button class="btn-yellow" onclick="copyReferral()">📋 Copier le lien</button>
   <button class="btn-green" onclick="shareWhatsApp()">📱 Partager WhatsApp</button>
   <p style="font-size:12px; color:#888; margin-top:8px;">
     👥 Amis parrainés : <strong id="referralCount">0</strong><br>
@@ -261,7 +235,6 @@
   <div class="nav-tabs">
     <div class="nav-tab active" onclick="showShopCat('boosters')">🚀 Boosters</div>
     <div class="nav-tab" onclick="showShopCat('skins')">🎨 Skins</div>
-    <div class="nav-tab" onclick="showShopCat('extras')">💎 Pi</div>
   </div>
   <div id="shopItems"></div>
   <div style="margin-top:12px;">
@@ -274,8 +247,8 @@
 <div class="card" id="cardPack" style="display:none;">
   <h2>📦 Pack Pi</h2>
   <p>Achète des points avec Pi</p>
-  <button class="btn-purple" onclick="buyPiPack(100, 0.1)">🪙 100 pts = 0.1 Pi</button>
-  <button class="btn-purple" onclick="buyPiPack(500, 0.5)">🪙 500 pts = 0.5 Pi</button>
+  <button class="btn-purple" onclick="addPts(100); toast('✅ +100 points !');">🪙 100 pts = 0.1 Pi</button>
+  <button class="btn-purple" onclick="addPts(500); toast('✅ +500 points !');">🪙 500 pts = 0.5 Pi</button>
 </div>
 
 <div style="text-align:center; margin-top:10px;">
@@ -296,8 +269,12 @@
 <script>
 // ========== INIT PI ==========
 let PiReady = false;
-async function initPi() {
-  try { Pi.init({ version: "2.0", sandbox: true }); PiReady = true; } catch(e) {}
+try {
+  Pi.init({ version: "2.0", sandbox: true });
+  PiReady = true;
+  console.log('✅ Pi SDK prêt');
+} catch(e) {
+  console.log('⚠️ Pi SDK non disponible - mode démo');
 }
 
 // ========== DONNÉES ==========
@@ -307,24 +284,16 @@ let streak = parseInt(localStorage.getItem('streak') || '0');
 let quizDone = false, wheelDone = false, shootDone = false;
 let quiz = [], answers = [], qIndex = 0;
 let lastWheelPrize = 0, lastShootScored = false;
-let activeMultiplier = parseFloat(localStorage.getItem('mult') || '1');
-let multEnd = parseInt(localStorage.getItem('multEnd') || '0');
+let activeMultiplier = 1;
+let multEnd = 0;
 let shopCat = 'boosters';
 let dailyClaimed = parseInt(localStorage.getItem('dailyDay') || '0');
 let jackpotEntered = localStorage.getItem('jackpot') === 'true';
 let referrals = parseInt(localStorage.getItem('referrals') || '0');
 let refPoints = parseInt(localStorage.getItem('refPts') || '0');
 
-// Vérifier parrainage (simulé)
-const urlParams = new URLSearchParams(window.location.search);
-const ref = urlParams.get('ref');
-if (ref && !name) {
-  localStorage.setItem('referredBy', ref);
-}
-
-let inventory = JSON.parse(localStorage.getItem('inv') || '{"multiplier_2x":0,"extra_wheel":0,"extra_shoot":0,"extra_quiz":0,"golden_ball":0}');
+let inventory = JSON.parse(localStorage.getItem('inv') || '{"multiplier_2x":0,"extra_wheel":0,"extra_shoot":0,"extra_quiz":0}');
 let missions = JSON.parse(localStorage.getItem('miss') || '[{"id":"quiz_perfect","name":"Quiz Parfait","desc":"5/5 au quiz","reward":50,"done":false},{"id":"wheel_big","name":"Gros Lot","desc":"25+ pts à la roue","reward":30,"done":false},{"id":"shoot_goal","name":"Buteur","desc":"Marque un but","reward":25,"done":false},{"id":"daily_login","name":"Connexion","desc":"Connecte-toi","reward":10,"done":false}]');
-
 let achievements = JSON.parse(localStorage.getItem('achv') || '{"first_login":false,"first_quiz":false,"first_wheel":false,"first_goal":false,"pts_100":false,"pts_500":false,"pts_1000":false,"streak_7":false,"perfect_quiz":false,"buy_shop":false}');
 
 const allQuestions = [
@@ -349,6 +318,7 @@ const dailyRewards = [5,10,15,20,25,30,40,50,60,75,100,150,200,250,300,400,500,6
 
 // ========== FONCTIONS ==========
 function toast(msg) {
+  console.log('🔔', msg);
   const t = document.getElementById('toast');
   t.textContent = msg; t.className = 'toast show';
   setTimeout(() => t.className = 'toast', 3000);
@@ -381,8 +351,6 @@ function save() {
   localStorage.setItem('shootDone', shootDone);
   localStorage.setItem('miss', JSON.stringify(missions));
   localStorage.setItem('inv', JSON.stringify(inventory));
-  localStorage.setItem('mult', activeMultiplier);
-  localStorage.setItem('multEnd', multEnd);
   localStorage.setItem('dailyDay', dailyClaimed);
   localStorage.setItem('jackpot', jackpotEntered);
   localStorage.setItem('referrals', referrals);
@@ -390,6 +358,41 @@ function save() {
   localStorage.setItem('achv', JSON.stringify(achievements));
   localStorage.setItem('date', today);
 }
+
+function doLogin(username) {
+  console.log('🔑 Connexion:', username);
+  name = username;
+  toast('✅ Connecté : ' + name);
+  save();
+  updateUI();
+}
+
+// ========== LOGIN - DEUX BOUTONS ==========
+// Bouton Pi Network
+document.getElementById('btnLogin').addEventListener('click', async function() {
+  console.log('🟣 Clic Pi Network');
+  
+  if (PiReady) {
+    try {
+      const auth = await Pi.authenticate(['username', 'payments'], function(payment) {
+        console.log('💳 Paiement:', payment);
+      });
+      doLogin(auth.user.username);
+    } catch(e) {
+      console.error('❌ Erreur Pi:', e);
+      // Fallback
+      doLogin('Pionnier_' + Math.random().toString(36).substr(2, 5));
+    }
+  } else {
+    doLogin('Pionnier_' + Math.random().toString(36).substr(2, 5));
+  }
+});
+
+// Bouton Démo (CONNEXION RAPIDE)
+document.getElementById('btnLoginDemo').addEventListener('click', function() {
+  console.log('🟡 Clic Démo');
+  doLogin('Joueur_' + Math.random().toString(36).substr(2, 5));
+});
 
 // ========== CALENDRIER ==========
 function renderCalendar() {
@@ -415,24 +418,23 @@ function renderCalendar() {
     `🔥 Série de ${streak} jours • Prochaine récompense : ${dailyRewards[dailyClaimed] || 'MAX'} pts`;
 }
 
-document.getElementById('btnClaimDaily').addEventListener('click', () => {
+document.getElementById('btnClaimDaily').addEventListener('click', function() {
   if (dailyClaimed < dayOfMonth) {
     const reward = dailyRewards[dailyClaimed];
     dailyClaimed++;
     addPts(reward);
     toast(`🎁 +${reward} points ! Jour ${dailyClaimed}/30`);
     renderCalendar();
-    checkAchievements();
   }
 });
 
 // ========== JACKPOT ==========
-document.getElementById('btnEnterJackpot').addEventListener('click', () => {
-  if (jackpotEntered) { toast('⚠️ Déjà inscrit au jackpot'); return; }
+document.getElementById('btnEnterJackpot').addEventListener('click', function() {
+  if (jackpotEntered) { toast('⚠️ Déjà inscrit'); return; }
   jackpotEntered = true;
-  document.getElementById('jackpotStatus').textContent = '✅ Inscrit ! Résultat à minuit';
+  document.getElementById('jackpotStatus').textContent = '✅ Inscrit !';
   document.getElementById('jackpotStatus').style.color = '#3ddc84';
-  document.getElementById('btnEnterJackpot').disabled = true;
+  this.disabled = true;
   save();
 });
 
@@ -469,4 +471,4 @@ function checkAchievements() {
   if (!achievements.first_quiz && quizDone) { achievements.first_quiz = true; updated = true; }
   if (!achievements.first_wheel && wheelDone) { achievements.first_wheel = true; updated = true; }
   if (!achievements.first_goal && lastShootScored) { achievements.first_goal = true; updated = true; }
-  if (!achievements.pts_100 && pts
+  if (!achievements.pts_100 && pts >= 100) { achievem
