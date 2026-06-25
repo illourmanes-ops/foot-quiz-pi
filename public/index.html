@@ -3,62 +3,402 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Foot Quiz Pi - Test</title>
+<title>Foot Quiz Pi</title>
+<script src="https://sdk.minepi.com/pi-sdk.js"></script>
 <style>
+  :root {
+    --gold: #e8b84b;
+    --gold-bright: #ffd166;
+    --white: #f3f6f1;
+    --glass: rgba(255,255,255,0.055);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
-    background: #0d2818;
-    color: white;
-    font-family: Arial, sans-serif;
-    text-align: center;
+    background: radial-gradient(circle at 50% -10%, #123a22 0%, #050f08 55%);
+    color: var(--white);
+    font-family: 'Segoe UI', sans-serif;
+    min-height: 100vh;
     padding: 20px;
   }
   button {
-    background: #e8b84b;
-    color: #1a1208;
     border: none;
-    padding: 20px;
-    font-size: 20px;
-    font-weight: bold;
-    border-radius: 10px;
+    border-radius: 12px;
+    padding: 16px;
+    font-size: 1rem;
+    font-weight: 700;
     cursor: pointer;
-    margin: 10px;
-    width: 80%;
-    max-width: 300px;
+    width: 100%;
+    margin: 5px 0;
   }
-  button:active {
-    background: #ffd166;
-  }
-  .result {
-    background: rgba(255,255,255,0.1);
+  .btn-gold { background: linear-gradient(135deg, #ffd166, #b88f2f); color: #1a1208; }
+  .btn-purple { background: linear-gradient(135deg, #a855f7, #8c3ce0); color: white; }
+  .card {
+    background: var(--glass);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 16px;
     padding: 20px;
-    margin: 20px;
-    border-radius: 10px;
-    font-size: 18px;
+    margin: 10px 0;
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
   }
+  .toast {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: #ffd166; color: #1a1208; padding: 12px 18px;
+    border-radius: 10px; font-weight: 700;
+    opacity: 0; transition: opacity 0.3s;
+    z-index: 1000;
+  }
+  .toast.show { opacity: 1; }
+  .option {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid #1f4a30;
+    border-radius: 10px;
+    padding: 12px;
+    cursor: pointer;
+    text-align: left;
+    width: 100%;
+    color: white;
+    margin: 5px 0;
+  }
+  .option.selected { border-color: #e8b84b; background: rgba(232,184,75,0.14); }
+  .scoreboard {
+    display: flex; justify-content: space-around;
+    background: var(--glass); border-radius: 16px; padding: 14px;
+    max-width: 400px; margin: 0 auto 10px;
+  }
+  .scoreboard div { text-align: center; }
+  .wheel-wrap { position: relative; width: 200px; margin: 0 auto; }
+  .wheel-pointer {
+    position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
+    width: 0; height: 0;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-top: 16px solid #ffd166;
+    z-index: 2;
+  }
+  #wheelSvg { transition: transform 3.2s cubic-bezier(0.15, 0.85, 0.2, 1); }
+  .goal-frame {
+    border: 4px solid white; border-bottom: none;
+    height: 80px; margin: 0 auto 14px; max-width: 250px;
+    display: flex; align-items: flex-end; justify-content: center;
+    font-size: 2rem; border-radius: 6px 6px 0 0;
+    background: repeating-linear-gradient(90deg, rgba(255,255,255,0.05) 0 1px, transparent 1px 14px);
+  }
+  .zone-buttons { display: flex; gap: 8px; }
+  .zone-buttons button { font-size: 0.85rem; }
 </style>
 </head>
 <body>
 
-<h1>⚽ Foot Quiz Pi</h1>
-<h2>TEST DES BOUTONS</h2>
-
-<div class="result" id="result">
-  👆 Clique sur un bouton ci-dessous
+<div style="display:flex; justify-content:center; gap:6px; margin-bottom:10px;">
+  <button onclick="changeLang('fr')" id="btnFR" style="width:auto; padding:8px 16px; background:#e8b84b; color:#1a1208;">FR</button>
+  <button onclick="changeLang('en')" id="btnEN" style="width:auto; padding:8px 16px; background:rgba(255,255,255,0.1); color:white;">EN</button>
 </div>
 
-<button onclick="testClick('CONNEXION')">🔐 Se connecter avec Pi</button>
-<button onclick="testClick('QUIZ')">📝 Test Quiz</button>
-<button onclick="testClick('ROUE')">🎡 Test Roue</button>
-<button onclick="testClick('TIR')">🥅 Test Tir</button>
-<button onclick="testClick('PACK')">📦 Test Pack</button>
+<h1 style="text-align:center;">⚽ Foot Quiz Pi</h1>
+
+<div class="scoreboard">
+  <div><div style="font-size:0.7rem;color:#8aa090;">JOUEUR</div><div id="userDisplay">—</div></div>
+  <div><div style="font-size:0.7rem;color:#8aa090;">SÉRIE</div><div id="streakDisplay">0</div></div>
+  <div><div style="font-size:0.7rem;color:#8aa090;">POINTS</div><div id="pointsDisplay">0</div></div>
+</div>
+
+<!-- CARTE CONNEXION -->
+<div class="card" id="loginCard">
+  <h2>🔐 Connexion</h2>
+  <p>Connecte-toi avec Pi Network</p>
+  <button class="btn-gold" onclick="doLogin()">Se connecter avec Pi</button>
+</div>
+
+<!-- CARTE QUIZ -->
+<div class="card" id="quizCard" style="display:none;">
+  <h2>🧠 Quiz du jour</h2>
+  <div id="quizProgress"></div>
+  <div id="quizContent"></div>
+  <div style="display:flex; gap:8px;">
+    <button onclick="prevQuestion()" id="prevBtn" style="display:none;">← Précédent</button>
+    <button onclick="nextQuestion()" id="nextBtn" style="display:none;">Suivant →</button>
+  </div>
+  <button class="btn-gold" onclick="submitQuiz()">Valider</button>
+</div>
+
+<!-- CARTE ROUE -->
+<div class="card" id="wheelCard" style="display:none; text-align:center;">
+  <h2>🎡 Roue</h2>
+  <div class="wheel-wrap">
+    <div class="wheel-pointer"></div>
+    <svg id="wheelSvg" width="200" height="200" viewBox="0 0 100 100"></svg>
+  </div>
+  <button class="btn-purple" onclick="spinWheel()" id="spinBtn">Regarder pub et tourner</button>
+</div>
+
+<!-- CARTE TIR -->
+<div class="card" id="shootCard" style="display:none;">
+  <h2>🥅 Tirs au but</h2>
+  <div class="goal-frame"><span id="ballEmoji">⚽</span></div>
+  <div class="zone-buttons">
+    <button onclick="doShoot('gauche')">⬅️ Gauche</button>
+    <button onclick="doShoot('centre')">⬆️ Centre</button>
+    <button onclick="doShoot('droite')">➡️ Droite</button>
+  </div>
+  <p id="shootResult" style="text-align:center;"></p>
+</div>
+
+<!-- CARTE PACK -->
+<div class="card" id="packCard" style="display:none;">
+  <h2>📦 Pack Bonus</h2>
+  <p>100 points pour 0.1 Pi</p>
+  <button class="btn-purple" onclick="buyPack()">Acheter 0.1 Pi</button>
+</div>
+
+<!-- CARTE CLASSEMENT -->
+<div class="card" id="leaderboardCard" style="display:none;">
+  <h2>🏆 Classement</h2>
+  <div id="leaderboardList"></div>
+</div>
+
+<div class="toast" id="toast"></div>
 
 <script>
-function testClick(action) {
-  console.log('✅ CLIC DÉTECTÉ: ' + action);
-  document.getElementById('result').innerHTML = '✅ Bouton cliqué: <strong>' + action + '</strong><br>Le clic fonctionne !';
-  alert('Clic fonctionne: ' + action);
-}
-</script>
+// ==========================================
+// TOUTES LES FONCTIONS EN GLOBAL
+// ==========================================
+console.log('🚀 SCRIPT CHARGÉ');
 
+let currentUser = null;
+let points = 0;
+let streak = 0;
+let quizDone = false;
+let wheelDone = false;
+let shootDone = false;
+let currentQuiz = [];
+let answers = [];
+let questionIndex = 0;
+
+// Questions
+const questions = [
+  { q: "Qui a gagné la Coupe du Monde 2022 ?", opts: ["France", "Brésil", "Argentine", "Allemagne"], correct: 2 },
+  { q: "Combien de joueurs dans une équipe ?", opts: ["9", "10", "11", "12"], correct: 2 },
+  { q: "Club avec le plus de LDC ?", opts: ["Barça", "Real Madrid", "Bayern", "Liverpool"], correct: 1 },
+  { q: "Football codifié en ?", opts: ["France", "Italie", "Brésil", "Angleterre"], correct: 3 },
+  { q: "Surnom de Messi ?", opts: ["CR7", "Ney", "La Pulga", "Kyky"], correct: 2 }
+];
+
+// ==========================================
+// FONCTIONS BOUTONS
+// ==========================================
+function doLogin() {
+  console.log('🔑 doLogin appelé');
+  currentUser = 'Joueur_' + Math.random().toString(36).substr(2, 5);
+  showToast('✅ Connecté : ' + currentUser);
+  updateUI();
+}
+
+function changeLang(lang) {
+  console.log('🌍 changeLang:', lang);
+  document.getElementById('btnFR').style.background = lang === 'fr' ? '#e8b84b' : 'rgba(255,255,255,0.1)';
+  document.getElementById('btnFR').style.color = lang === 'fr' ? '#1a1208' : 'white';
+  document.getElementById('btnEN').style.background = lang === 'en' ? '#e8b84b' : 'rgba(255,255,255,0.1)';
+  document.getElementById('btnEN').style.color = lang === 'en' ? '#1a1208' : 'white';
+  showToast('🌍 Langue: ' + lang.toUpperCase());
+}
+
+function startQuiz() {
+  currentQuiz = [...questions].sort(() => Math.random() - 0.5);
+  answers = new Array(5).fill(null);
+  questionIndex = 0;
+  renderQuestion();
+}
+
+function renderQuestion() {
+  const q = currentQuiz[questionIndex];
+  document.getElementById('quizProgress').textContent = `Question ${questionIndex + 1}/5`;
+  
+  let html = `<p><strong>${q.q}</strong></p>`;
+  q.opts.forEach((opt, i) => {
+    const sel = answers[questionIndex] === i ? ' selected' : '';
+    html += `<button class="option${sel}" onclick="selectAnswer(${i})">${opt}</button>`;
+  });
+  document.getElementById('quizContent').innerHTML = html;
+  
+  document.getElementById('prevBtn').style.display = questionIndex > 0 ? 'inline-block' : 'none';
+  document.getElementById('nextBtn').style.display = questionIndex < 4 ? 'inline-block' : 'none';
+}
+
+function selectAnswer(idx) {
+  console.log('✅ Réponse:', idx);
+  answers[questionIndex] = idx;
+  renderQuestion();
+}
+
+function prevQuestion() {
+  if (questionIndex > 0) { questionIndex--; renderQuestion(); }
+}
+
+function nextQuestion() {
+  if (questionIndex < 4) { questionIndex++; renderQuestion(); }
+}
+
+function submitQuiz() {
+  if (answers.includes(null)) {
+    showToast('⚠️ Réponds à toutes les questions');
+    return;
+  }
+  let correct = 0;
+  currentQuiz.forEach((q, i) => { if (answers[i] === q.correct) correct++; });
+  points += correct * 10;
+  quizDone = true;
+  showToast('🎉 ' + correct + '/5 • +' + (correct*10) + ' points');
+  updateUI();
+}
+
+// Roue
+const prizes = [5, 10, 15, 20, 25, 50, 100];
+const colors = ['#1d3322', '#234027', '#2c4f30', '#3a5c33', '#b88f2f', '#e8b84b', '#ff5d4d'];
+
+function drawWheel() {
+  const svg = document.getElementById('wheelSvg');
+  let html = '';
+  const total = [25, 25, 20, 15, 10, 4, 1];
+  const sum = total.reduce((a,b) => a+b, 0);
+  let acc = 0;
+  
+  total.forEach((w, i) => {
+    const start = acc;
+    const sweep = (w / sum) * 360;
+    acc += sweep;
+    const end = acc;
+    const mid = start + sweep/2;
+    
+    const startRad = ((start - 90) * Math.PI) / 180;
+    const endRad = ((end - 90) * Math.PI) / 180;
+    const midRad = ((mid - 90) * Math.PI) / 180;
+    
+    const x1 = 50 + 45 * Math.cos(startRad);
+    const y1 = 50 + 45 * Math.sin(startRad);
+    const x2 = 50 + 45 * Math.cos(endRad);
+    const y2 = 50 + 45 * Math.sin(endRad);
+    const mx = 50 + 30 * Math.cos(midRad);
+    const my = 50 + 30 * Math.sin(midRad);
+    
+    const large = sweep > 180 ? 1 : 0;
+    html += `<path d="M50,50 L${x1},${y1} A45,45 0 ${large} 0 ${x2},${y2} Z" fill="${colors[i]}" stroke="rgba(255,255,255,0.2)" stroke-width="0.5"/>`;
+    html += `<text x="${mx}" y="${my}" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="5" font-weight="bold">${prizes[i]}</text>`;
+  });
+  
+  html += `<circle cx="50" cy="50" r="10" fill="#1a1208" stroke="#ffd166" stroke-width="1.5"/>`;
+  html += `<text x="50" y="50" text-anchor="middle" dominant-baseline="middle" fill="#ffd166" font-size="4">🎡</text>`;
+  svg.innerHTML = html;
+}
+
+function spinWheel() {
+  if (wheelDone) { showToast('⚠️ Déjà tournée'); return; }
+  
+  document.getElementById('spinBtn').disabled = true;
+  const svg = document.getElementById('wheelSvg');
+  const rotation = 360 * 5 + Math.random() * 360;
+  svg.style.transform = `rotate(${rotation}deg)`;
+  
+  setTimeout(() => {
+    const angle = (360 - (rotation % 360)) % 360;
+    let prize = prizes[0];
+    const total = [25, 25, 20, 15, 10, 4, 1];
+    const sum = total.reduce((a,b) => a+b, 0);
+    let acc = 0;
+    total.forEach((w, i) => {
+      const start = acc;
+      acc += (w / sum) * 360;
+      if (angle >= start && angle < acc) prize = prizes[i];
+    });
+    
+    points += prize;
+    wheelDone = true;
+    document.getElementById('spinBtn').textContent = '✅ Déjà tournée';
+    showToast('🎉 +' + prize + ' points !');
+    updateUI();
+  }, 3500);
+}
+
+function doShoot(zone) {
+  if (shootDone) { showToast('⚠️ Déjà tiré'); return; }
+  
+  const zones = ['gauche', 'centre', 'droite'];
+  const keeper = zones[Math.floor(Math.random() * 3)];
+  const ball = document.getElementById('ballEmoji');
+  
+  ball.style.transform = 'scale(1.5)';
+  setTimeout(() => ball.style.transform = 'scale(1)', 300);
+  
+  setTimeout(() => {
+    const el = document.getElementById('shootResult');
+    if (zone !== keeper) {
+      const pts = Math.floor(Math.random() * 21) + 10;
+      points += pts;
+      el.textContent = '⚽ BUT ! +' + pts + ' pts';
+      el.style.color = '#3ddc84';
+      showToast('⚽ +' + pts + ' points !');
+    } else {
+      el.textContent = '😞 Arrêté !';
+      el.style.color = '#ff5d4d';
+    }
+    shootDone = true;
+    updateUI();
+  }, 600);
+}
+
+function buyPack() {
+  points += 100;
+  showToast('✅ +100 points !');
+  updateUI();
+}
+
+// ==========================================
+// UI
+// ==========================================
+function showToast(msg) {
+  console.log('🔔', msg);
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+function updateUI() {
+  document.getElementById('userDisplay').textContent = currentUser || '—';
+  document.getElementById('streakDisplay').textContent = streak;
+  document.getElementById('pointsDisplay').textContent = points;
+  
+  document.getElementById('loginCard').style.display = currentUser ? 'none' : 'block';
+  document.getElementById('quizCard').style.display = currentUser ? 'block' : 'none';
+  document.getElementById('wheelCard').style.display = currentUser ? 'block' : 'none';
+  document.getElementById('shootCard').style.display = currentUser ? 'block' : 'none';
+  document.getElementById('packCard').style.display = currentUser ? 'block' : 'none';
+  document.getElementById('leaderboardCard').style.display = currentUser ? 'block' : 'none';
+  
+  if (currentUser && !quizDone) startQuiz();
+  
+  document.getElementById('leaderboardList').innerHTML = `
+    <p>1. ${currentUser || 'Toi'} - ${points} pts</p>
+    <p>2. StarPlayer - 450 pts</p>
+    <p>3. FootKing - 380 pts</p>
+  `;
+}
+
+// ==========================================
+// INIT
+// ==========================================
+function init() {
+  console.log('🚀 INIT');
+  drawWheel();
+  updateUI();
+  console.log('✅ PRÊT - Tous les boutons fonctionnent');
+}
+
+// Démarrer
+document.addEventListener('DOMContentLoaded', init);
+console.log('📜 Script chargé et prêt');
+</script>
 </body>
 </html>
