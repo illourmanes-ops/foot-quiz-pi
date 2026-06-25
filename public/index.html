@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Foot Quiz Pi</title>
-<script src="https://sdk.minepi.com/pi-sdk.js?v=3"></script>
+<script src="https://sdk.minepi.com/pi-sdk.js?v=4"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght=500;600;700&family=Inter:wght=400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -22,6 +22,7 @@
     --glass-border: rgba(255,255,255,0.09);
   }
   * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
   body {
     margin: 0;
     background: radial-gradient(circle at 50% -10%, #123a22 0%, var(--pitch-dark) 55%);
@@ -31,67 +32,214 @@
     padding-bottom: 50px;
     -webkit-font-smoothing: antialiased;
   }
-  .lang-bar { display: flex; justify-content: center; gap: 6px; padding: 10px 16px 0; }
+
+  @keyframes fadeUp { from { opacity:0; transform: translateY(10px); } to { opacity:1; transform: translateY(0); } }
+
+  .lang-bar {
+    display: flex; justify-content: center; gap: 6px;
+    padding: 10px 16px 0;
+  }
   .lang-bar button {
     background: var(--glass); border: 1px solid var(--glass-border);
     color: #cfd8d1; font-size: 0.75rem; font-weight: 700;
-    padding: 5px 12px; border-radius: 20px; cursor: pointer;
+    padding: 5px 12px; border-radius: 20px; cursor: pointer; width: auto;
   }
   .lang-bar button.active { background: var(--gold); color: #1a1208; border-color: var(--gold); }
-  header { text-align: center; padding: 26px 16px 22px; }
-  header h1 {
-    margin: 0; font-family: 'Oswald', sans-serif; font-weight: 700; font-size: 2.15rem;
-    text-transform: uppercase; background: linear-gradient(180deg, var(--gold-bright), var(--gold-dim));
-    -webkit-background-clip: text; background-clip: text; color: transparent;
+
+  header {
+    position: relative;
+    text-align: center;
+    padding: 26px 16px 22px;
+    overflow: hidden;
   }
-  header p { margin: 8px 0 0; color: #9fb3a4; font-size: 0.85rem; }
+  header::before, header::after {
+    content: "";
+    position: absolute;
+    top: -50px;
+    width: 280px;
+    height: 280px;
+    background: conic-gradient(from 200deg, rgba(255,209,102,0.18), transparent 38deg);
+    pointer-events: none;
+  }
+  header::before { left: -70px; transform: rotate(8deg); }
+  header::after { right: -70px; transform: scaleX(-1) rotate(8deg); }
+
+  header h1 {
+    position: relative;
+    margin: 0;
+    font-family: 'Oswald', sans-serif;
+    font-weight: 700;
+    font-size: 2.15rem;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    background: linear-gradient(180deg, var(--gold-bright), var(--gold-dim));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    filter: drop-shadow(0 2px 0 rgba(0,0,0,0.6));
+  }
+  header p { position: relative; margin: 8px 0 0; color: #9fb3a4; font-size: 0.85rem; letter-spacing: 0.3px; }
+
   .scoreboard {
-    max-width: 430px; margin: 14px auto; background: var(--glass); border: 1px solid var(--glass-border);
-    border-radius: 16px; padding: 14px; display: flex; justify-content: space-between; align-items: center;
+    max-width: 430px;
+    margin: 14px auto;
+    background: var(--glass);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 14px 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+    animation: fadeUp 0.5s ease both;
   }
   .scoreboard > div { text-align: center; flex: 1; }
-  .scoreboard .label { font-size: 0.62rem; color: #8aa090; text-transform: uppercase; }
-  .scoreboard .value { font-family: 'Oswald', sans-serif; font-size: 1.5rem; color: var(--gold-bright); }
+  .scoreboard .label { font-size: 0.62rem; letter-spacing: 1.4px; color: #8aa090; text-transform: uppercase; }
+  .scoreboard .value {
+    font-family: 'Oswald', sans-serif;
+    font-variant-numeric: tabular-nums;
+    font-size: 1.5rem;
+    color: var(--gold-bright);
+    font-weight: 600;
+  }
+
   main { max-width: 430px; margin: 0 auto; padding: 0 16px; }
+
   .card {
-    background: var(--glass); border: 1px solid var(--glass-border);
-    border-radius: 16px; padding: 20px; margin-bottom: 16px;
+    background: var(--glass);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 16px;
+    animation: fadeUp 0.45s ease both;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.25);
   }
-  .card h2 { margin: 0 0 12px; font-family: 'Oswald', sans-serif; font-size: 1.12rem; color: var(--gold-bright); display: flex; align-items: center; gap: 8px; }
+  .card h2 {
+    margin: 0 0 12px;
+    font-family: 'Oswald', sans-serif;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    font-size: 1.12rem;
+    color: var(--gold-bright);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
   .card p.desc { color: #a3b3a8; font-size: 0.85rem; margin-top: -4px; margin-bottom: 14px;}
+
   button {
-    font-family: 'Inter', sans-serif; border: none; border-radius: 12px; padding: 14px 16px;
-    font-size: 0.95rem; font-weight: 700; cursor: pointer; width: 100%;
+    font-family: 'Inter', sans-serif;
+    border: none;
+    border-radius: 12px;
+    padding: 14px 16px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    width: 100%;
+    transition: transform 0.12s ease, filter 0.15s ease, box-shadow 0.15s ease;
   }
-  .btn-primary { background: linear-gradient(135deg, var(--gold-bright), var(--gold-dim)); color: #1a1208; }
-  .btn-primary:disabled { background: #3c403a; color: #888d83; cursor: not-allowed; }
+  button:active { transform: scale(0.965); }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--gold-bright), var(--gold-dim));
+    color: #1a1208;
+    box-shadow: 0 4px 14px rgba(232,184,75,0.3);
+  }
+  .btn-primary:hover { filter: brightness(1.06); }
+  .btn-primary:disabled { background: #3c403a; color: #888d83; box-shadow: none; cursor: not-allowed; }
   .btn-ghost { background: transparent; border: 1px solid var(--gold-dim); color: var(--gold); margin-top: 8px; }
+
   .question { margin-bottom: 14px; }
-  .question p { margin: 0 0 10px; font-weight: 700; font-size: 0.95rem; }
+  .question p { margin: 0 0 10px; font-weight: 700; font-size: 0.95rem; line-height: 1.4; }
   .options { display: flex; flex-direction: column; gap: 8px; }
-  .option { background: rgba(255,255,255,0.04); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; font-size: 0.9rem; cursor: pointer; }
+  .option {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: 0.15s ease;
+  }
+  .option:active { transform: scale(0.98); }
   .option.selected { border-color: var(--gold); background: rgba(232,184,75,0.14); }
-  .quiz-progress { font-size: 0.72rem; color: var(--gold-dim); margin-bottom: 10px; font-weight: 700; text-transform: uppercase; }
+
+  .quiz-progress {
+    font-size: 0.72rem; color: var(--gold-dim); letter-spacing: 1.2px;
+    text-transform: uppercase; margin-bottom: 10px; font-weight: 700;
+  }
   .quiz-bar { height: 4px; background: rgba(255,255,255,0.08); border-radius: 4px; margin-bottom: 14px; overflow:hidden; }
-  .quiz-bar-fill { height: 100%; background: var(--gold-bright); transition: width 0.3s; }
-  .quiz-nav { display: flex; justify-content: space-between; gap: 10px; }
+  .quiz-bar-fill { height: 100%; background: linear-gradient(90deg, var(--gold-dim), var(--gold-bright)); transition: width 0.3s ease; }
+  .quiz-nav { display: flex; justify-content: space-between; gap: 10px; margin-top: 8px; }
+  .quiz-nav button { width: auto; flex: 1; }
+
   .wheel-zone { text-align: center; }
   .wheel-wrap { position: relative; width: 220px; margin: 0 auto 18px; }
+  .wheel-wrap svg { display: block; filter: drop-shadow(0 8px 18px rgba(0,0,0,0.5)); }
   .wheel-pointer {
-    position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
-    width: 0; height: 0; border-left: 11px solid transparent; border-right: 11px solid transparent; border-top: 18px solid var(--gold-bright); z-index: 2;
+    position: absolute; top: -10px; left: 50%;
+    transform: translateX(-50%);
+    width: 0; height: 0;
+    border-left: 11px solid transparent;
+    border-right: 11px solid transparent;
+    border-top: 18px solid var(--gold-bright);
+    filter: drop-shadow(0 2px 2px rgba(0,0,0,0.5));
+    z-index: 2;
   }
   #wheelSvg { transition: transform 3.2s cubic-bezier(0.15, 0.85, 0.2, 1); }
-  .goal-wrap { background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 14px; padding: 18px 12px 10px; text-align: center; }
-  .goal-frame { border: 4px solid var(--white); border-bottom: none; height: 90px; margin: 0 auto 14px; max-width: 280px; display: flex; align-items: flex-end; justify-content: center; font-size: 2.2rem; position: relative; }
+
+  .goal-wrap {
+    background: rgba(0,0,0,0.2);
+    border: 1px solid var(--glass-border);
+    border-radius: 14px;
+    padding: 18px 12px 10px;
+    margin-bottom: 14px;
+    text-align: center;
+  }
+  .goal-frame {
+    border: 4px solid var(--white);
+    border-bottom: none;
+    height: 90px;
+    margin: 0 auto 14px;
+    max-width: 280px;
+    background: repeating-linear-gradient(90deg, rgba(255,255,255,0.05) 0 1px, transparent 1px 14px);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    font-size: 2.2rem;
+    position: relative;
+    border-radius: 6px 6px 0 0;
+  }
+  .ball-emoji { transition: transform 0.5s ease; }
   .zone-buttons { display: flex; gap: 8px; max-width: 280px; margin: 0 auto; }
-  .zone-buttons button { background: rgba(255,255,255,0.06); border: 1px solid var(--gold-dim); color: var(--white); font-size: 0.85rem; padding: 11px 6px; border-radius: 10px; }
+  .zone-buttons button {
+    background: rgba(255,255,255,0.06); border: 1px solid var(--gold-dim); color: var(--white);
+    font-size: 0.85rem; padding: 11px 6px; border-radius: 10px;
+  }
+  .zone-buttons button:disabled { opacity: 0.45; }
   .zone-buttons button.chosen { background: var(--gold); color: #1a1208; }
+
   .leaderboard-list { list-style: none; padding: 0; margin: 0; }
-  .leaderboard-list li { display: flex; justify-content: space-between; padding: 10px 4px; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 0.9rem; }
+  .leaderboard-list li {
+    display: flex; justify-content: space-between;
+    padding: 10px 4px; border-bottom: 1px solid rgba(255,255,255,0.06);
+    font-size: 0.9rem;
+  }
+  .leaderboard-list li:nth-child(1) { color: var(--gold-bright); font-weight: 700; font-size: 0.98rem; }
+  .leaderboard-list li:nth-child(2) { color: #d9d9d9; font-weight: 600; }
+  .leaderboard-list li:nth-child(3) { color: #d8a86a; font-weight: 600; }
+
   .toast {
-    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--gold-bright); color: #1a1208;
-    padding: 12px 18px; border-radius: 10px; font-weight: 700; opacity: 0; transition: opacity 0.3s; z-index: 1000; pointer-events: none;
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: var(--gold-bright); color: #1a1208; padding: 12px 18px;
+    border-radius: 10px; font-weight: 700; font-size: 0.85rem;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.45);
+    opacity: 0; transition: opacity 0.3s;
+    pointer-events: none;
+    max-width: 90%;
+    text-align: center;
+    z-index: 1000;
   }
   .toast.show { opacity: 1; }
 </style>
@@ -99,14 +247,14 @@
 <body>
 
 <div class="lang-bar" id="langBar">
-  <button data-lang="fr" class="active">FR</button>
+  <button data-lang="fr">FR</button>
   <button data-lang="en">EN</button>
   <button data-lang="es">ES</button>
 </div>
 
 <header>
   <h1>⚽ Foot Quiz Pi</h1>
-  <p id="headerSubtitle">Quiz du jour • Roue de la chance • Tirs au but • Classement</p>
+  <p id="headerSubtitle"></p>
 </header>
 
 <div class="scoreboard">
@@ -125,65 +273,67 @@
 </div>
 
 <main>
+
   <div class="card" id="loginCard">
-    <h2>🔐 <span id="lblLoginTitle">Connexion</span></h2>
-    <p class="desc" id="lblLoginDesc">Connecte-toi avec Pi Network pour jouer et garder tes points.</p>
-    <button class="btn-primary" id="loginBtn">Se connecter avec Pi</button>
+    <h2>🔐 <span id="lblLoginTitle"></span></h2>
+    <p class="desc" id="lblLoginDesc"></p>
+    <button class="btn-primary" id="loginBtn"></button>
   </div>
 
   <div class="card" id="testPaymentCard" style="display:none;">
-    <h2>💳 <span id="lblTestPayTitle">Test de paiement</span></h2>
-    <p class="desc" id="lblTestPayDesc">Effectue un petit paiement test (0.01 Pi) pour valider la configuration de ton app.</p>
-    <button class="btn-primary" id="testPaymentBtn">Payer 0.01 Pi (test)</button>
+    <h2>💳 <span id="lblTestPayTitle"></span></h2>
+    <p class="desc" id="lblTestPayDesc"></p>
+    <button class="btn-primary" id="testPaymentBtn"></button>
   </div>
 
   <div class="card" id="quizCard" style="display:none;">
-    <h2>🧠 <span id="lblQuizTitle">Quiz du jour</span></h2>
-    <p class="desc" id="lblQuizDesc">5 questions, 10 points par bonne réponse.</p>
-    <div id="quizContainer">
-      <p style="text-align:center; color:var(--gold-dim);">Chargement du quiz du jour...</p>
-    </div>
-    <button class="btn-primary" id="submitQuizBtn" style="display:none;">Valider mes réponses</button>
+    <h2>🧠 <span id="lblQuizTitle"></span></h2>
+    <p class="desc" id="lblQuizDesc"></p>
+    <div id="quizContainer"></div>
+    <button class="btn-primary" id="submitQuizBtn"></button>
   </div>
 
   <div class="card wheel-zone" id="wheelCard" style="display:none;">
-    <h2 style="justify-content:center;">🎡 <span id="lblWheelTitle">Roue quotidienne</span></h2>
+    <h2 style="justify-content:center;">🎡 <span id="lblWheelTitle"></span></h2>
     <div class="wheel-wrap">
       <div class="wheel-pointer"></div>
       <svg id="wheelSvg" width="220" height="220" viewBox="0 0 100 100"></svg>
     </div>
-    <button class="btn-primary" id="spinBtn">Regarder une pub et tourner</button>
+    <button class="btn-primary" id="spinBtn"></button>
   </div>
 
   <div class="card" id="shootCard" style="display:none;">
-    <h2>🥅 <span id="lblShootTitle">Tirs au but</span></h2>
-    <p class="desc" id="lblShootDesc">Choisis ta zone de tir. Si le gardien ne devine pas, tu marques entre 10 et 30 points !</p>
+    <h2>🥅 <span id="lblShootTitle"></span></h2>
+    <p class="desc" id="lblShootDesc"></p>
     <div class="goal-wrap">
-      <div class="goal-frame"><span id="ballEmoji" style="transition:transform 0.4s;">⚽</span></div>
+      <div class="goal-frame">
+        <span class="ball-emoji" id="ballEmoji">⚽</span>
+      </div>
       <div class="zone-buttons">
-        <button id="zoneGauche" data-zone="gauche">⬅️ Gauche</button>
-        <button id="zoneCentre" data-zone="centre">⬆️ Centre</button>
-        <button id="zoneDroite" data-zone="droite">➡️ Droite</button>
+        <button id="zoneGauche" data-zone="gauche"></button>
+        <button id="zoneCentre" data-zone="centre"></button>
+        <button id="zoneDroite" data-zone="droite"></button>
       </div>
     </div>
   </div>
 
   <div class="card" id="packCard" style="display:none;">
-    <h2>📦 <span id="lblPackTitle">Pack Bonus</span></h2>
-    <p class="desc" id="lblPackDesc">Soutiens l'app et reçois 100 points bonus instantanément pour 0.1 Pi.</p>
-    <button class="btn-primary" id="buyPackBtn">Acheter pour 0.1 Pi</button>
+    <h2>📦 <span id="lblPackTitle"></span></h2>
+    <p class="desc" id="lblPackDesc"></p>
+    <button class="btn-primary" id="buyPackBtn"></button>
   </div>
 
   <div class="card" id="shareCard" style="display:none; text-align:center;">
-    <h2>📣 <span id="lblShareTitle">Invite tes amis</span></h2>
-    <p class="desc" id="lblShareDesc">Partage l'app et défie tes amis au quiz foot du jour !</p>
+    <h2 style="justify-content:center;">📣 <span id="lblShareTitle"></span></h2>
+    <p class="desc" id="lblShareDesc"></p>
     <button id="shareBtn" style="background:#25d366; color:white;">📱 WhatsApp</button>
   </div>
 
   <div class="card" id="leaderboardCard" style="display:none;">
-    <h2>🏆 <span id="lblLeaderboardTitle">Classement</span></h2>
+    <h2>🏆 <span id="lblLeaderboardTitle"></span></h2>
     <ul class="leaderboard-list" id="leaderboardList"></ul>
   </div>
+
 </main>
 
 <div class="toast" id="toast"></div>
@@ -191,9 +341,20 @@
 <script>
 const API_BASE = "https://foot-quiz-pi.onrender.com";
 
+window.addEventListener('error', (e) => {
+  const t = document.createElement('div');
+  t.style.position = 'fixed'; t.style.top = '10px'; t.style.left = '10px'; t.style.right = '10px';
+  t.style.background = '#ff5d4d'; t.style.color = 'white'; t.style.padding = '10px';
+  t.style.borderRadius = '8px'; t.style.zIndex = '9999'; t.style.fontSize = '0.8rem';
+  t.textContent = 'Erreur JS: ' + e.message + ' (ligne ' + e.lineno + ')';
+  document.body.appendChild(t);
+});
+
+// ===================== TRADUCTIONS =====================
 const translations = {
   fr: {
-    subtitle: "Quiz du jour • Roue de la chance • Tirs au but • Classement", player: "Joueur", streak: "Série 🔥", points: "Points",
+    subtitle: "Quiz du jour • Roue de la chance • Tirs au but • Classement",
+    player: "Joueur", streak: "Série 🔥", points: "Points",
     loginTitle: "Connexion", loginDesc: "Connecte-toi avec Pi Network pour jouer et garder tes points.", loginBtn: "Se connecter avec Pi",
     testPayTitle: "Test de paiement", testPayDesc: "Effectue un petit paiement test (0.01 Pi) pour valider la configuration de ton app.", testPayBtn: "Payer 0.01 Pi (test)",
     quizTitle: "Quiz du jour", quizDesc: "5 questions, 10 points par bonne réponse.", quizSubmit: "Valider mes réponses",
@@ -201,12 +362,17 @@ const translations = {
     shootTitle: "Tirs au but", shootDesc: "Choisis ta zone de tir. Si le gardien ne devine pas, tu marques entre 10 et 30 points !",
     zoneGauche: "⬅️ Gauche", zoneCentre: "⬆️ Centre", zoneDroite: "➡️ Droite",
     packTitle: "Pack Bonus", packDesc: "Soutiens l'app et reçois 100 points bonus instantanément pour 0.1 Pi.", packBtn: "Acheter pour 0.1 Pi",
-    shareTitle: "Invite tes amis", shareDesc: "Partage l'app et défie tes amis au quiz foot du jour !", leaderboardTitle: "Classement",
-    answerAll: "Réponds à toutes les questions !", quizAlreadyDone: "Quiz déjà fait aujourd'hui ✓", wheelAlreadyDone: "Roue déjà tournée ✓",
-    questionLabel: "Question", prev: "← Précédent", next: "Suivant →"
+    shareTitle: "Invite tes amis", shareDesc: "Partage l'app et défie tes amis au quiz foot du jour !",
+    leaderboardTitle: "Classement",
+    answerAll: "Réponds à toutes les questions !",
+    quizAlreadyDone: "Quiz déjà fait aujourd'hui ✓",
+    wheelAlreadyDone: "Roue déjà tournée ✓",
+    questionLabel: "Question",
+    prev: "← Précédent", next: "Suivant →"
   },
   en: {
-    subtitle: "Daily Quiz • Lucky Wheel • Penalty Shots • Leaderboard", player: "Player", streak: "Streak 🔥", points: "Points",
+    subtitle: "Daily Quiz • Lucky Wheel • Penalty Shots • Leaderboard",
+    player: "Player", streak: "Streak 🔥", points: "Points",
     loginTitle: "Login", loginDesc: "Sign in with Pi Network to play and keep your points.", loginBtn: "Sign in with Pi",
     testPayTitle: "Payment Test", testPayDesc: "Make a small test payment (0.01 Pi) to validate your app setup.", testPayBtn: "Pay 0.01 Pi (test)",
     quizTitle: "Daily Quiz", quizDesc: "5 questions, 10 points per correct answer.", quizSubmit: "Submit my answers",
@@ -214,29 +380,37 @@ const translations = {
     shootTitle: "Penalty Shootout", shootDesc: "Pick your shooting zone. If the keeper guesses wrong, you score 10 to 30 points!",
     zoneGauche: "⬅️ Left", zoneCentre: "⬆️ Center", zoneDroite: "➡️ Right",
     packTitle: "Bonus Pack", packDesc: "Support the app and get 100 bonus points instantly for 0.1 Pi.", packBtn: "Buy for 0.1 Pi",
-    shareTitle: "Invite friends", shareDesc: "Share the app and challenge your friends on today's quiz!", leaderboardTitle: "Leaderboard",
-    answerAll: "Answer all questions!", quizAlreadyDone: "Quiz already done today ✓", wheelAlreadyDone: "Wheel already spun ✓",
-    questionLabel: "Question", prev: "← Previous", next: "Next →"
+    shareTitle: "Invite friends", shareDesc: "Share the app and challenge your friends on today's quiz!",
+    leaderboardTitle: "Leaderboard",
+    answerAll: "Answer all questions!",
+    quizAlreadyDone: "Quiz already done today ✓",
+    wheelAlreadyDone: "Wheel already spun ✓",
+    questionLabel: "Question",
+    prev: "← Previous", next: "Next →"
   },
   es: {
-    subtitle: "Quiz diario • Ruleta • Penaltis • Clasificación", player: "Jugador", streak: "Racha 🔥", points: "Puntos",
+    subtitle: "Quiz diario • Ruleta • Penaltis • Clasificación",
+    player: "Jugador", streak: "Racha 🔥", points: "Puntos",
     loginTitle: "Acceso", loginDesc: "Conéctate con Pi Network para jugar y guardar tus puntos.", loginBtn: "Conectar con Pi",
     testPayTitle: "Prueba de pago", testPayDesc: "Haz un pequeño pago de prueba (0.01 Pi) para validar tu app.", testPayBtn: "Pagar 0.01 Pi (prueba)",
-    quizTitle: "Quiz diario", quizDesc: "5 preguntas, 10 puntos por respuesta correcta.", quizSubmit: "Enviar mis réponses",
+    quizTitle: "Quiz diario", quizDesc: "5 preguntas, 10 puntos por respuesta correcta.", quizSubmit: "Enviar mis respuestas",
     wheelTitle: "Ruleta diaria", spinBtn: "Ver anuncio y girar",
-    shootTitle: "Tanda de penaltis", shootDesc: "¡Elige tu zona de tiro. Si el portero no adivina, marcas puntos!",
+    shootTitle: "Tanda de penaltis", shootDesc: "Elige tu zona de tiro. ¡Si el portero no adivina, marcas entre 10 et 30 puntos!",
     zoneGauche: "⬅️ Izquierda", zoneCentre: "⬆️ Centro", zoneDroite: "➡️ Derecha",
     packTitle: "Pack Bono", packDesc: "Apoya la app y recibe 100 puntos extra al instante por 0.1 Pi.", packBtn: "Comprar por 0.1 Pi",
-    shareTitle: "Invita a amigos", shareDesc: "¡Defía a tus amigos en el quiz de hoy!", leaderboardTitle: "Clasificación",
-    answerAll: "¡Responde todas las questions!", quizAlreadyDone: "Quiz ya hecho ✓", wheelAlreadyDone: "Ruleta ya girada ✓",
-    questionLabel: "Pregunta", prev: "← Anterior", next: "Siguiente →"
+    shareTitle: "Invita a tus amigos", shareDesc: "¡Comparte la app y desafía a tus amigos en el quiz de hoy!",
+    leaderboardTitle: "Clasificación",
+    answerAll: "¡Responde todas las preguntas!",
+    quizAlreadyDone: "Quiz ya completado hoy ✓",
+    wheelAlreadyDone: "Ruleta ya girada ✓",
+    questionLabel: "Pregunta",
+    prev: "← Anterior", next: "Siguiente →"
   }
 };
 let currentLang = localStorage.getItem('fqp_lang') || 'fr';
 
 function applyTranslations() {
   const t = translations[currentLang];
-  if (!t) return;
   document.getElementById('headerSubtitle').textContent = t.subtitle;
   document.getElementById('lblPlayer').textContent = t.player;
   document.getElementById('lblStreak').textContent = t.streak;
@@ -263,9 +437,13 @@ function applyTranslations() {
   document.getElementById('lblShareTitle').textContent = t.shareTitle;
   document.getElementById('lblShareDesc').textContent = t.shareDesc;
   document.getElementById('lblLeaderboardTitle').textContent = t.leaderboardTitle;
-  document.querySelectorAll('#langBar button').forEach(b => b.classList.toggle('active', b.dataset.lang === currentLang));
+
+  document.querySelectorAll('#langBar button').forEach(b => {
+    b.classList.toggle('active', b.dataset.lang === currentLang);
+  });
 }
 
+// ===================== APP =====================
 let currentUsername = null;
 let currentQuiz = [];
 let selectedAnswers = [];
@@ -275,12 +453,31 @@ const WHEEL_PRIZES = [5, 10, 15, 20, 25, 50, 100];
 const WHEEL_WEIGHTS = [25, 25, 20, 15, 10, 4, 1];
 const WHEEL_COLORS = ['#1d3322', '#234027', '#2c4f30', '#3a5c33', '#b88f2f', '#e8b84b', '#ff5d4d'];
 
-try { if (typeof Pi !== 'undefined') { Pi.init({ version: "2.0", sandbox: false }); } } catch (e) {}
+try {
+  if (typeof Pi !== 'undefined') {
+    Pi.init({ version: "2.0", sandbox: false });
+  }
+} catch (e) { console.error('Erreur Pi.init:', e); }
 
 function showToast(msg) {
-  const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show');
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 3000);
 }
+
+// ===== ROUE (SVG) =====
+function buildWheelSegments() {
+  const total = WHEEL_WEIGHTS.reduce((a, b) => a + b, 0);
+  let acc = 0;
+  return WHEEL_WEIGHTS.map((w, i) => {
+    const start = acc;
+    const sweep = (w / total) * 360;
+    acc += sweep;
+    return { start, end: acc, mid: start + sweep / 2, prize: WHEEL_PRIZES[i], color: WHEEL_COLORS[i] };
+  });
+}
+const wheelSegments = buildWheelSegments();
 
 function polarPoint(angleDeg, radius) {
   const rad = (angleDeg - 90) * Math.PI / 180;
@@ -288,68 +485,12 @@ function polarPoint(angleDeg, radius) {
 }
 
 function renderWheel() {
-  const svg = document.getElementById('wheelSvg'); if(!svg) return;
-  const R = 48; let total = WHEEL_WEIGHTS.reduce((a, b) => a + b, 0); let acc = 0;
+  const svg = document.getElementById('wheelSvg');
+  const R = 48;
   let html = `<circle cx="50" cy="50" r="49" fill="#0a1a0e" stroke="#e8b84b" stroke-width="2"/>`;
-  
-  WHEEL_WEIGHTS.forEach((w, i) => {
-    const start = acc; const sweep = (w / total) * 360; acc += sweep; const end = acc;
-    const p1 = polarPoint(start, R); const p2 = polarPoint(end, R);
-    const largeArc = sweep > 180 ? 1 : 0;
-    html += `<path d="M50,50 L${p1.x.toFixed(2)},${p1.y.toFixed(2)} A${R},${R} 0 ${largeArc} 1 ${p2.x.toFixed(2)},${p2.y.toFixed(2)} Z" fill="${WHEEL_COLORS[i]}" stroke="#0a1a0e" stroke-width="0.6"/>`;
-    const tp = polarPoint(start + sweep / 2, R * 0.66);
-    const textColor = WHEEL_PRIZES[i] >= 50 ? '#1a1208' : '#f3f6f1';
-    html += `<text x="${tp.x.toFixed(2)}" y="${tp.y.toFixed(2)}" fill="${textColor}" font-size="7" font-weight="700" text-anchor="middle" dominant-baseline="middle">${WHEEL_PRIZES[i]}</text>`;
-  });
-  svg.innerHTML = html;
-}
-
-const wheelSegments = WHEEL_WEIGHTS.map((w, i) => {
-  let total = WHEEL_WEIGHTS.reduce((a,b)=>a+b,0);
-  let previousBranches = WHEEL_WEIGHTS.slice(0,i).reduce((a,b)=>a+b,0);
-  let start = (previousBranches/total)*360;
-  let sweep = (w/total)*360;
-  return { mid: start + sweep/2 };
-});
-
-document.getElementById('loginBtn').addEventListener('click', async () => {
-  const btn = document.getElementById('loginBtn');
-  btn.disabled = true; btn.textContent = "Connexion...";
-  try {
-    if (typeof Pi === 'undefined') {
-      currentUsername = 'test_' + Math.floor(Math.random() * 999);
-      await onLoginSuccess(); return;
-    }
-    const auth = await Pi.authenticate(['username', 'payments'], (p) => {});
-    currentUsername = auth.user.username;
-    await fetch(`${API_BASE}/api/pi/verify`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: currentUsername })
-    });
-    await onLoginSuccess();
-  } catch (err) {
-    showToast("Erreur d'authentification"); btn.disabled = false; btn.textContent = "Se connecter avec Pi";
-  }
-});
-
-async function onLoginSuccess() {
-  document.getElementById('loginCard').style.display = 'none';
-  document.getElementById('testPaymentCard').style.display = 'block';
-  document.getElementById('quizCard').style.display = 'block';
-  document.getElementById('wheelCard').style.display = 'block';
-  document.getElementById('shootCard').style.display = 'block';
-  document.getElementById('packCard').style.display = 'block';
-  document.getElementById('shareCard').style.display = 'block';
-  document.getElementById('leaderboardCard').style.display = 'block';
-  document.getElementById('usernameDisplay').textContent = currentUsername;
-  await refreshUserStatus(); await loadQuiz(); await loadLeaderboard();
-}
-
-async function refreshUserStatus() {
-  try {
-    const res = await fetch(`${API_BASE}/api/user/${currentUsername}`);
-    const data = await res.json();
-    document.getElementById('pointsDisplay').textContent = data.points;
-    document.getElementById('streakDisplay').textContent = data.streak || 0;
-    if (data.quizDoneToday) { document.getElementById('submitQuizBtn').disabled = true; document.getElementById('submitQuizBtn').textContent = translations[currentLang].quizAlreadyDone; }
-    if (data.wheelDoneToday) { document.getElementById('spinBtn').disabled = true; document.getElementById('spinBtn').textContent = translations[currentLang].wheelAlreadyDone; }
-    if (data.shootDoneToday) { document.querySelectorAll('.zone
+  wheelSegments.forEach(seg => {
+    const p1 = polarPoint(seg.start, R);
+    const p2 = polarPoint(seg.end, R);
+    const largeArc = (seg.end - seg.start) > 180 ? 1 : 0;
+    html += `<path d="M50,50 L${p1.x.toFixed(2)},${p1.y.toFixed(2)} A${R},${R} 0 ${largeArc} 1 ${p2.x.toFixed(2)},${p2.y.toFixed(2)} Z" fill="${seg.color}" stroke="#0a1a0e" stroke-width="0.6"/>`;
+    const tp =
