@@ -12,8 +12,9 @@ const PI_API_BASE = "https://api.minepi.com/v2";
 app.use(cors());
 app.use(bodyParser.json());
 
-// Rend tous les fichiers de la racine accessibles
+// Cette ligne gère automatiquement la racine ET les sous-dossiers si nécessaire
 app.use(express.static(path.join(__dirname)));
+app.use(express.static(path.join(__dirname, 'public')));
 
 const questionBank = [
   { question: "Combien de joueurs sur un terrain par équipe ?", options: ["10", "11", "12"], answer: 1 },
@@ -80,9 +81,18 @@ app.post('/api/pi/complete', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// FORCE l'envoi de index.html pour la racine de ton site
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
+// Solution ultime pour le "Not Found" : Cherche index.html partout où il peut être
+app.get('*', (req, res) => {
+  const rootPath = path.join(__dirname, 'index.html');
+  const publicPath = path.join(__dirname, 'public', 'index.html');
+  
+  if (require('fs').existsSync(rootPath)) {
+    res.sendFile(rootPath);
+  } else if (require('fs').existsSync(publicPath)) {
+    res.sendFile(publicPath);
+  } else {
+    res.status(404).send("Fichier index.html introuvable sur GitHub. Vérifie son nom.");
+  }
 });
 
-app.listen(PORT, () => console.log(`Serveur prêt`));
+app.listen(PORT, () => console.log(`Serveur en ligne`));
