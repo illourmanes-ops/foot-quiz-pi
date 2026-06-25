@@ -29,6 +29,8 @@
   
   .btn-yellow { background: #e8b84b; color: #1a1208; }
   .btn-purple { background: #8c3ce0; color: white; }
+  .btn-red { background: #ff5d4d; color: white; }
+  .btn-green { background: #3ddc84; color: #1a1208; }
   
   .card {
     background: rgba(255,255,255,0.05);
@@ -132,6 +134,15 @@
     font-size: 14px;
     margin: 10px 0;
   }
+
+  .reset-link {
+    color: #ff5d4d;
+    text-align: center;
+    font-size: 12px;
+    cursor: pointer;
+    margin-top: 10px;
+    text-decoration: underline;
+  }
 </style>
 </head>
 <body>
@@ -159,6 +170,7 @@
   <h2>🔐 Connexion Pi Network</h2>
   <p>Connecte-toi pour jouer et gagner des Pi</p>
   <button class="btn-yellow" id="btnLogin">🪙 Se connecter avec Pi</button>
+  <p class="reset-link" onclick="resetAll()">🔄 Réinitialiser toutes les données</p>
 </div>
 
 <!-- QUIZ -->
@@ -171,6 +183,7 @@
     <button id="btnNext" style="display:none;">Suivant →</button>
   </div>
   <button class="btn-yellow" id="btnSubmitQuiz">Valider</button>
+  <p class="reset-link" onclick="resetAll()">🔄 Réinitialiser toutes les données</p>
 </div>
 
 <!-- ROUE -->
@@ -182,6 +195,7 @@
     <svg id="wheelSvg" width="180" height="180" viewBox="0 0 100 100"></svg>
   </div>
   <button class="btn-purple" id="btnSpin">📺 Voir la pub Pi et tourner</button>
+  <p class="reset-link" onclick="resetAll()">🔄 Réinitialiser toutes les données</p>
 </div>
 
 <!-- TIR -->
@@ -195,6 +209,7 @@
     <button onclick="shoot('droite')">➡️ Droite</button>
   </div>
   <p id="shootMsg" style="text-align:center; margin-top:10px;"></p>
+  <p class="reset-link" onclick="resetAll()">🔄 Réinitialiser toutes les données</p>
 </div>
 
 <!-- PACK -->
@@ -232,6 +247,40 @@ async function initPi() {
 }
 
 // ==========================================
+// FONCTION RESET
+// ==========================================
+function resetAll() {
+  if (confirm('Es-tu sûr de vouloir TOUT réinitialiser ?\n\nCela effacera :\n- Ton pseudo\n- Tes points\n- Ta série\n- Le quiz du jour\n- La roue\n- Les tirs')) {
+    localStorage.clear();
+    name = null;
+    pts = 0;
+    streak = 0;
+    quizDone = false;
+    wheelDone = false;
+    shootDone = false;
+    quiz = [];
+    answers = [];
+    qIndex = 0;
+    
+    document.getElementById('nameDisplay').textContent = '—';
+    document.getElementById('streakDisplay').textContent = '0';
+    document.getElementById('ptsDisplay').textContent = '0';
+    document.getElementById('cardLogin').style.display = 'block';
+    document.getElementById('cardQuiz').style.display = 'none';
+    document.getElementById('cardWheel').style.display = 'none';
+    document.getElementById('cardShoot').style.display = 'none';
+    document.getElementById('cardPack').style.display = 'none';
+    
+    document.getElementById('btnSpin').textContent = '📺 Voir la pub Pi et tourner';
+    document.getElementById('btnSpin').disabled = false;
+    document.getElementById('shootMsg').textContent = '';
+    
+    drawWheel();
+    toast('✅ Tout a été réinitialisé !');
+  }
+}
+
+// ==========================================
 // DONNÉES
 // ==========================================
 let name = localStorage.getItem('name') || null;
@@ -260,7 +309,7 @@ if (localStorage.getItem('date') !== today) {
 }
 
 // ==========================================
-// FONCTIONS UTILITAIRES
+// FONCTIONS
 // ==========================================
 function toast(msg) {
   const t = document.getElementById('toast');
@@ -299,7 +348,7 @@ function updateUI() {
 }
 
 // ==========================================
-// LOGIN PI
+// LOGIN
 // ==========================================
 document.getElementById('btnLogin').addEventListener('click', async function() {
   if (PiReady) {
@@ -369,12 +418,11 @@ document.getElementById('btnSubmitQuiz').addEventListener('click', () => {
 });
 
 // ==========================================
-// API PUB PI NETWORK (LA VRAIE !)
+// PUB PI ADS (API OFFICIELLE)
 // ==========================================
 async function showPiAd() {
   console.log('📺 Démarrage pub Pi...');
   
-  // Afficher l'overlay de chargement
   const overlay = document.getElementById('adOverlay');
   const statusEl = document.getElementById('adStatus');
   const errorEl = document.getElementById('adError');
@@ -387,19 +435,16 @@ async function showPiAd() {
   spinnerEl.style.display = 'block';
   
   try {
-    // VÉRIFIER si une pub est prête
     statusEl.textContent = '🔍 Vérification de la pub...';
     const isAdReadyResponse = await Pi.Ads.isAdReady("interstitial");
     console.log('isAdReady:', isAdReadyResponse);
     
     if (isAdReadyResponse.ready === true) {
-      // PUB PRÊTE -> L'afficher directement
       statusEl.textContent = '📺 Affichage de la pub...';
       await Pi.Ads.showAd("interstitial");
-      console.log('✅ Pub affichée');
+      console.log('✅ Pub affichée directement');
       
     } else {
-      // CHARGER une nouvelle pub
       statusEl.textContent = '📥 Chargement d\'une pub...';
       const requestAdResponse = await Pi.Ads.requestAd("interstitial");
       console.log('requestAd:', requestAdResponse);
@@ -408,7 +453,6 @@ async function showPiAd() {
         throw new Error("Impossible de charger la pub");
       }
       
-      // AFFICHER la pub chargée
       statusEl.textContent = '📺 Affichage de la pub...';
       const showAdResponse = await Pi.Ads.showAd("interstitial");
       console.log('showAd:', showAdResponse);
@@ -418,12 +462,10 @@ async function showPiAd() {
       }
     }
     
-    // SUCCÈS
     statusEl.textContent = '✅ Pub terminée !';
     statusEl.style.color = '#3ddc84';
     spinnerEl.style.display = 'none';
     
-    // Fermer l'overlay après 1 seconde
     await new Promise(resolve => setTimeout(resolve, 1000));
     overlay.classList.remove('show');
     
@@ -432,14 +474,12 @@ async function showPiAd() {
   } catch (error) {
     console.error('❌ Erreur pub Pi:', error);
     
-    // Afficher l'erreur
-    statusEl.textContent = '⚠️ Pub non disponible';
+    statusEl.textContent = '⚠️ Pub non disponible (mode démo)';
     statusEl.style.color = '#ff5d4d';
-    errorEl.textContent = 'Mode démo : la roue va tourner sans pub';
+    errorEl.textContent = 'La roue va tourner sans pub';
     errorEl.style.display = 'block';
     spinnerEl.style.display = 'none';
     
-    // Fermer après 2 secondes
     await new Promise(resolve => setTimeout(resolve, 2000));
     overlay.classList.remove('show');
     
@@ -448,7 +488,7 @@ async function showPiAd() {
 }
 
 // ==========================================
-// ROUE + PUB PI
+// ROUE
 // ==========================================
 function drawWheel() {
   const prizes = [5,10,15,20,25,50,100];
@@ -481,10 +521,8 @@ function drawWheel() {
 document.getElementById('btnSpin').addEventListener('click', async function() {
   if (wheelDone) return;
   
-  // AFFICHER LA PUB PI (avec la vraie API)
   await showPiAd();
   
-  // LANCER LA ROUE
   const btn = document.getElementById('btnSpin');
   btn.disabled = true;
   btn.textContent = '🎡 La roue tourne...';
@@ -515,7 +553,7 @@ document.getElementById('btnSpin').addEventListener('click', async function() {
 });
 
 // ==========================================
-// TIR AU BUT
+// TIR
 // ==========================================
 function shoot(zone) {
   if (shootDone) { toast('⚠️ Déjà tiré'); return; }
@@ -540,7 +578,7 @@ function shoot(zone) {
 }
 
 // ==========================================
-// PACK BONUS
+// PACK
 // ==========================================
 document.getElementById('btnPack').addEventListener('click', function() {
   pts += 100;
@@ -565,7 +603,7 @@ async function init() {
   
   drawWheel();
   updateUI();
-  console.log('✅ Prêt - API Pub Pi intégrée !');
+  console.log('✅ Prêt !');
 }
 
 init();
