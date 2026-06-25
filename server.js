@@ -12,8 +12,8 @@ const PI_API_BASE = "https://api.minepi.com/v2";
 app.use(cors());
 app.use(bodyParser.json());
 
-// Permet de lire index.html directement à la racine
-app.use(express.static(__dirname));
+// Rend tous les fichiers de la racine accessibles
+app.use(express.static(path.join(__dirname)));
 
 const questionBank = [
   { question: "Combien de joueurs sur un terrain par équipe ?", options: ["10", "11", "12"], answer: 1 },
@@ -25,12 +25,7 @@ const questionBank = [
   { question: "Qui a le plus de buts en Ligue des Champions ?", options: ["Messi", "Ronaldo", "Benzema"], answer: 1 },
   { question: "Quel club anglais est surnommé 'Les Blues' ?", options: ["Chelsea", "Man City", "Arsenal"], answer: 0 },
   { question: "Dans quel club joue Erling Haaland en 2024 ?", options: ["Real", "PSG", "Man City"], answer: 2 },
-  { question: "Quelle est la durée d'une mi-temps ?", options: ["40 min", "45 min", "50 min"], answer: 1 },
-  { question: "Quel joueur a gagné le Ballon d'Or 2022 ?", options: ["Mbappé", "Benzema", "Neymar"], answer: 1 },
-  { question: "De quelle couleur est le carton d'expulsion ?", options: ["Jaune", "Vert", "Rouge"], answer: 2 },
-  { question: "Où se jouera la Coupe du Monde 2026 ?", options: ["Qatar", "USA/Canada/Mexique", "France"], answer: 1 },
-  { question: "Quel club est surnommé les Blaugranas ?", options: ["Real Madrid", "FC Barcelone", "Valence"], answer: 1 },
-  { question: "Quel pays a gagné la Coupe du Monde 2018 ?", options: ["Croatie", "Belgique", "France"], answer: 2 }
+  { question: "Quelle est la durée d'une mi-temps ?", options: ["40 min", "45 min", "50 min"], answer: 1 }
 ];
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
@@ -64,7 +59,7 @@ app.post('/api/pi/approve', async (req, res) => {
   const { paymentId } = req.body;
   if (!paymentId || !PI_API_KEY) return res.status(400).json({ error: 'Données manquantes' });
   try {
-    const r = await fetch(`${PI_API_BASE}/payments/${paymentId}/approve`, {
+    const r = await globalThis.fetch(`${PI_API_BASE}/payments/${paymentId}/approve`, {
       method: 'POST',
       headers: { Authorization: `Key ${PI_API_KEY}` }
     });
@@ -76,7 +71,7 @@ app.post('/api/pi/complete', async (req, res) => {
   const { paymentId, txid } = req.body;
   if (!paymentId || !txid || !PI_API_KEY) return res.status(400).json({ error: 'Données manquantes' });
   try {
-    const r = await fetch(`${PI_API_BASE}/payments/${paymentId}/complete`, {
+    const r = await globalThis.fetch(`${PI_API_BASE}/payments/${paymentId}/complete`, {
       method: 'POST',
       headers: { Authorization: `Key ${PI_API_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ txid })
@@ -85,9 +80,9 @@ app.post('/api/pi/complete', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// Envoie l'index.html pour toutes les autres requêtes
-app.get('*', (req, res) => {
+// FORCE l'envoi de index.html pour la racine de ton site
+app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-app.listen(PORT, () => console.log(`Serveur actif sur le port ${PORT}`));
+app.listen(PORT, () => console.log(`Serveur prêt`));
