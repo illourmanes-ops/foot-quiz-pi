@@ -5,8 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Foot Quiz Pi</title>
 <script src="https://sdk.minepi.com/pi-sdk.js"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
     --pitch: #0d2818;
@@ -21,17 +19,15 @@
     --glass: rgba(255,255,255,0.055);
     --glass-border: rgba(255,255,255,0.09);
     --pi-purple: #8c3ce0;
-    --pi-purple-light: #a855f7;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html { scroll-behavior: smooth; }
   body {
     background: radial-gradient(circle at 50% -10%, #123a22 0%, var(--pitch-dark) 55%);
     color: var(--white);
-    font-family: 'Inter', 'Segoe UI', sans-serif;
+    font-family: 'Segoe UI', sans-serif;
     min-height: 100vh;
     padding-bottom: 50px;
-    -webkit-font-smoothing: antialiased;
   }
 
   @keyframes fadeUp { 
@@ -43,10 +39,6 @@
     0%, 100% { transform: translateX(0); }
     25% { transform: translateX(-5px); }
     75% { transform: translateX(5px); }
-  }
-
-  @keyframes spin {
-    to { transform: rotate(360deg); }
   }
 
   .lang-bar {
@@ -62,29 +54,12 @@
   .lang-bar button.active { background: var(--gold); color: #1a1208; border-color: var(--gold); }
 
   header {
-    position: relative;
     text-align: center;
     padding: 26px 16px 22px;
-    overflow: hidden;
   }
-  header::before, header::after {
-    content: "";
-    position: absolute;
-    top: -50px;
-    width: 280px;
-    height: 280px;
-    background: conic-gradient(from 200deg, rgba(255,209,102,0.18), transparent 38deg);
-    pointer-events: none;
-  }
-  header::before { left: -70px; transform: rotate(8deg); }
-  header::after { right: -70px; transform: scaleX(-1) rotate(8deg); }
-
   header h1 {
-    position: relative;
-    font-family: 'Oswald', sans-serif;
     font-weight: 700;
-    font-size: 2.15rem;
-    letter-spacing: 1.2px;
+    font-size: 2rem;
     text-transform: uppercase;
     background: linear-gradient(180deg, var(--gold-bright), var(--gold-dim));
     -webkit-background-clip: text;
@@ -93,7 +68,6 @@
     filter: drop-shadow(0 2px 0 rgba(0,0,0,0.6));
   }
   header p { 
-    position: relative; 
     margin: 8px 0 0; 
     color: #9fb3a4; 
     font-size: 0.85rem; 
@@ -109,7 +83,6 @@
     padding: 14px;
     display: flex;
     justify-content: space-between;
-    align-items: center;
     box-shadow: 0 8px 24px rgba(0,0,0,0.35);
     animation: fadeUp 0.5s ease both;
   }
@@ -122,8 +95,6 @@
     margin-bottom: 4px;
   }
   .scoreboard .value {
-    font-family: 'Oswald', sans-serif;
-    font-variant-numeric: tabular-nums;
     font-size: 1.5rem;
     color: var(--gold-bright);
     font-weight: 600;
@@ -143,9 +114,6 @@
   }
   .card h2 {
     margin: 0 0 12px;
-    font-family: 'Oswald', sans-serif;
-    font-weight: 600;
-    letter-spacing: 0.3px;
     font-size: 1.12rem;
     color: var(--gold-bright);
     display: flex;
@@ -155,12 +123,10 @@
   .card p.desc { 
     color: #a3b3a8; 
     font-size: 0.85rem; 
-    margin-top: -4px; 
     margin-bottom: 14px;
   }
 
   button {
-    font-family: 'Inter', sans-serif;
     border: none;
     border-radius: 12px;
     padding: 14px 16px;
@@ -168,13 +134,12 @@
     font-weight: 700;
     cursor: pointer;
     width: 100%;
-    transition: transform 0.12s ease, filter 0.15s ease, box-shadow 0.15s ease;
+    transition: transform 0.12s ease, filter 0.15s ease;
   }
   button:active { transform: scale(0.965); }
   button:disabled { 
     opacity: 0.5; 
     cursor: not-allowed; 
-    transform: none !important; 
   }
   
   .btn-primary {
@@ -190,7 +155,7 @@
   }
 
   .btn-pi {
-    background: linear-gradient(135deg, var(--pi-purple-light), var(--pi-purple));
+    background: linear-gradient(135deg, #a855f7, #8c3ce0);
     color: white;
     box-shadow: 0 4px 14px rgba(140,60,224,0.4);
   }
@@ -201,9 +166,6 @@
     border: 1px solid var(--gold-dim); 
     color: var(--gold); 
     margin-top: 8px; 
-  }
-  .btn-ghost:hover:not(:disabled) { 
-    background: rgba(232,184,75,0.1); 
   }
 
   .quiz-progress {
@@ -225,16 +187,8 @@
     height: 100%; 
     background: linear-gradient(90deg, var(--gold-dim), var(--gold-bright)); 
     transition: width 0.3s ease; 
-    border-radius: 4px;
   }
   
-  .question { margin-bottom: 14px; }
-  .question p { 
-    margin: 0 0 10px; 
-    font-weight: 700; 
-    font-size: 0.95rem; 
-    line-height: 1.4; 
-  }
   .options { display: flex; flex-direction: column; gap: 8px; }
   .option {
     background: rgba(255,255,255,0.04);
@@ -255,14 +209,6 @@
   .option.selected { 
     border-color: var(--gold); 
     background: rgba(232,184,75,0.14); 
-  }
-  .option.correct {
-    border-color: var(--green-ok);
-    background: rgba(61,220,132,0.15);
-  }
-  .option.wrong {
-    border-color: var(--red);
-    background: rgba(255,93,77,0.15);
   }
   
   .quiz-nav { 
@@ -319,7 +265,6 @@
     align-items: flex-end;
     justify-content: center;
     font-size: 2.2rem;
-    position: relative;
     border-radius: 6px 6px 0 0;
   }
   .ball-emoji { 
@@ -352,7 +297,6 @@
   .leaderboard-list { 
     list-style: none; 
     padding: 0; 
-    margin: 0; 
   }
   .leaderboard-list li {
     display: flex; 
@@ -364,16 +308,9 @@
   .leaderboard-list li:nth-child(1) { 
     color: var(--gold-bright); 
     font-weight: 700; 
-    font-size: 0.98rem; 
   }
-  .leaderboard-list li:nth-child(2) { 
-    color: #d9d9d9; 
-    font-weight: 600; 
-  }
-  .leaderboard-list li:nth-child(3) { 
-    color: #d8a86a; 
-    font-weight: 600; 
-  }
+  .leaderboard-list li:nth-child(2) { color: #d9d9d9; font-weight: 600; }
+  .leaderboard-list li:nth-child(3) { color: #d8a86a; font-weight: 600; }
 
   .toast {
     position: fixed; 
@@ -396,42 +333,15 @@
   }
   .toast.show { opacity: 1; }
 
-  .ad-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.9);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    z-index: 999;
-  }
-  .ad-overlay .ad-box {
-    background: #111;
-    border: 2px solid var(--pi-purple-light);
-    padding: 40px 30px;
-    border-radius: 14px;
-    text-align: center;
-  }
-  .ad-overlay p { 
-    margin: 0 0 10px; 
-    color: var(--gold-bright); 
-    font-weight: 700; 
-  }
-  .ad-overlay .countdown { 
-    font-size: 2rem; 
-    color: white; 
-    font-weight: 700;
-  }
-
-  .loading-spinner {
+  .status-badge {
     display: inline-block;
-    width: 20px;
-    height: 20px;
-    border: 2px solid rgba(255,255,255,0.3);
-    border-radius: 50%;
-    border-top-color: var(--gold-bright);
-    animation: spin 0.6s linear infinite;
+    background: var(--pi-purple);
+    color: white;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    margin-left: 8px;
   }
 </style>
 </head>
@@ -445,7 +355,7 @@
 
 <header>
   <h1>⚽ Foot Quiz Pi</h1>
-  <p id="headerSubtitle">Quiz du jour • Roue de la chance • Tirs au but • Classement</p>
+  <p>Quiz • Roue • Tirs au but • Classement <span class="status-badge" id="piStatus">PI SANDBOX</span></p>
 </header>
 
 <div class="scoreboard">
@@ -465,21 +375,20 @@
 
 <main>
 
-  <!-- Carte de connexion -->
   <div class="card" id="loginCard">
     <h2>🔐 Connexion Pi Network</h2>
-    <p class="desc">Connecte-toi avec Pi Network pour jouer et garder tes points.</p>
-    <button class="btn-primary" id="loginBtn">Se connecter avec Pi</button>
+    <p class="desc">Connecte-toi avec Pi Network pour jouer et gagner des points !</p>
+    <button class="btn-pi" id="loginBtn">🪙 Se connecter avec Pi</button>
+    <p style="text-align:center; margin-top:10px; font-size:0.75rem; color:#888;">
+      Ouvre cette page dans le Pi Browser
+    </p>
   </div>
 
-  <!-- Quiz -->
   <div class="card" id="quizCard" style="display:none;">
     <h2>🧠 Quiz du jour</h2>
     <p class="desc">5 questions, 10 points par bonne réponse.</p>
     <div class="quiz-progress" id="quizProgress">Question 1/5</div>
-    <div class="quiz-bar">
-      <div class="quiz-bar-fill" id="quizBarFill" style="width: 0%;"></div>
-    </div>
+    <div class="quiz-bar"><div class="quiz-bar-fill" id="quizBarFill" style="width: 0%;"></div></div>
     <div id="quizContainer"></div>
     <div class="quiz-nav">
       <button class="btn-ghost" id="prevQuestionBtn" style="display:none;">← Précédent</button>
@@ -488,7 +397,6 @@
     <button class="btn-primary" id="submitQuizBtn">Valider mes réponses</button>
   </div>
 
-  <!-- Roue avec pub Pi -->
   <div class="card wheel-zone" id="wheelCard" style="display:none;">
     <h2 style="justify-content:center;">🎡 Roue quotidienne</h2>
     <div class="wheel-wrap">
@@ -498,14 +406,11 @@
     <button class="btn-pi" id="spinBtn">📺 Regarder une pub Pi et tourner</button>
   </div>
 
-  <!-- Tirs au but -->
   <div class="card" id="shootCard" style="display:none;">
     <h2>🥅 Tirs au but</h2>
-    <p class="desc">Choisis ta zone de tir. Si le gardien ne devine pas, tu marques entre 10 et 30 points !</p>
+    <p class="desc">Choisis ta zone de tir. Marque entre 10 et 30 points !</p>
     <div class="goal-wrap">
-      <div class="goal-frame">
-        <span class="ball-emoji" id="ballEmoji">⚽</span>
-      </div>
+      <div class="goal-frame"><span class="ball-emoji" id="ballEmoji">⚽</span></div>
       <div class="zone-buttons">
         <button id="zoneGauche" data-zone="gauche">⬅️ Gauche</button>
         <button id="zoneCentre" data-zone="centre">⬆️ Centre</button>
@@ -515,21 +420,18 @@
     <p style="text-align:center; margin-top:10px; color: var(--gold-dim);" id="shootResult"></p>
   </div>
 
-  <!-- Pack Bonus avec paiement Pi -->
   <div class="card" id="packCard" style="display:none;">
     <h2>📦 Pack Bonus</h2>
-    <p class="desc">Soutiens l'app et reçois 100 points bonus instantanément pour 0.1 Pi.</p>
+    <p class="desc">Achète 100 points bonus pour 0.1 Pi !</p>
     <button class="btn-pi" id="buyPackBtn">🪙 Acheter pour 0.1 Pi</button>
   </div>
 
-  <!-- Partage -->
   <div class="card" id="shareCard" style="display:none; text-align:center;">
     <h2 style="justify-content:center;">📣 Invite tes amis</h2>
-    <p class="desc">Partage l'app et défie tes amis au quiz foot du jour !</p>
+    <p class="desc">Partage l'app et défie tes amis !</p>
     <button id="shareBtn" style="background:#25d366; color:white;">📱 WhatsApp</button>
   </div>
 
-  <!-- Classement -->
   <div class="card" id="leaderboardCard" style="display:none;">
     <h2>🏆 Classement</h2>
     <ul class="leaderboard-list" id="leaderboardList"></ul>
@@ -540,69 +442,83 @@
 <div class="toast" id="toast"></div>
 
 <script>
-// ===================== INITIALISATION PI SDK =====================
-let PiInitialized = false;
+// ==========================================
+// CONFIGURATION PI NETWORK - TA CLÉ API
+// ==========================================
+const PI_API_KEY = "duruepl6zs2bzi2c0zxhqzmi4tppayycm1rh5neiflzsec8qpaqotcmex0bdvfy2";
+const PI_SANDBOX = true; // true = testnet, false = mainnet
 
-try {
-  Pi.init({ version: "2.0", sandbox: true });
-  console.log('✅ Pi SDK initialisé');
-  PiInitialized = true;
-} catch (e) {
-  console.error('❌ Erreur Pi.init:', e);
+let PiNetwork = null;
+let piReady = false;
+
+// ==========================================
+// INITIALISATION PI SDK
+// ==========================================
+async function initPiSDK() {
+  try {
+    console.log('🔧 Initialisation Pi SDK...');
+    
+    Pi.init({ 
+      version: "2.0", 
+      sandbox: PI_SANDBOX 
+    });
+    
+    PiNetwork = Pi;
+    piReady = true;
+    
+    document.getElementById('piStatus').textContent = PI_SANDBOX ? 'PI SANDBOX' : 'PI MAINNET';
+    document.getElementById('piStatus').style.background = PI_SANDBOX ? '#8c3ce0' : '#3ddc84';
+    
+    console.log('✅ Pi SDK prêt - Mode:', PI_SANDBOX ? 'SANDBOX' : 'MAINNET');
+    return true;
+  } catch (error) {
+    console.error('❌ Erreur Pi SDK:', error);
+    document.getElementById('piStatus').textContent = 'PI INDISPO';
+    document.getElementById('piStatus').style.background = '#ff5d4d';
+    return false;
+  }
 }
 
-// ===================== ÉTAT DE L'APPLICATION =====================
-let currentUsername = null;
-let currentQuiz = [];
-let selectedAnswers = [];
-let currentQuestionIndex = 0;
+// ==========================================
+// ÉTAT DE L'APPLICATION
+// ==========================================
+let currentUsername = localStorage.getItem('fqp_username') || null;
 let userPoints = parseInt(localStorage.getItem('fqp_points') || '0');
 let userStreak = parseInt(localStorage.getItem('fqp_streak') || '0');
-let quizCompleted = localStorage.getItem('fqp_quiz_done') === 'true';
-let wheelSpun = localStorage.getItem('fqp_wheel_done') === 'true';
-let shootDone = localStorage.getItem('fqp_shoot_done') === 'true';
+let quizCompleted = false;
+let wheelSpun = false;
+let shootDone = false;
 let currentLang = localStorage.getItem('fqp_lang') || 'fr';
 
-// Réinitialiser si nouveau jour
+// Réinitialisation quotidienne
 const today = new Date().toDateString();
 const lastPlayed = localStorage.getItem('fqp_date');
 if (lastPlayed !== today) {
   quizCompleted = false;
   wheelSpun = false;
   shootDone = false;
+  if (currentUsername) userStreak++;
   localStorage.setItem('fqp_date', today);
 }
 
-// ===================== QUESTIONS =====================
+// ==========================================
+// QUESTIONS
+// ==========================================
 const quizQuestions = [
-  {
-    question: "Qui a gagné la Coupe du Monde 2022 ?",
-    options: ["France", "Brésil", "Argentine", "Allemagne"],
-    correct: 2
-  },
-  {
-    question: "Combien de joueurs dans une équipe de football ?",
-    options: ["9", "10", "11", "12"],
-    correct: 2
-  },
-  {
-    question: "Quel club a le plus de Ligues des Champions ?",
-    options: ["FC Barcelone", "Real Madrid", "Bayern Munich", "Liverpool"],
-    correct: 1
-  },
-  {
-    question: "Où le football moderne a-t-il été codifié ?",
-    options: ["France", "Italie", "Brésil", "Angleterre"],
-    correct: 3
-  },
-  {
-    question: "Qui est 'La Pulga' ?",
-    options: ["Cristiano Ronaldo", "Neymar", "Lionel Messi", "Mbappé"],
-    correct: 2
-  }
+  { question: "Qui a gagné la Coupe du Monde 2022 ?", options: ["France", "Brésil", "Argentine", "Allemagne"], correct: 2 },
+  { question: "Combien de joueurs dans une équipe ?", options: ["9", "10", "11", "12"], correct: 2 },
+  { question: "Club avec le plus de LDC ?", options: ["Barça", "Real Madrid", "Bayern", "Liverpool"], correct: 1 },
+  { question: "Football moderne codifié en ?", options: ["France", "Italie", "Brésil", "Angleterre"], correct: 3 },
+  { question: "Surnom de Messi ?", options: ["CR7", "Ney", "La Pulga", "Kyky"], correct: 2 }
 ];
 
-// ===================== ROUE =====================
+let currentQuiz = [];
+let selectedAnswers = [];
+let currentQuestionIndex = 0;
+
+// ==========================================
+// ROUE
+// ==========================================
 const WHEEL_PRIZES = [5, 10, 15, 20, 25, 50, 100];
 const WHEEL_WEIGHTS = [25, 25, 20, 15, 10, 4, 1];
 const WHEEL_COLORS = ['#1d3322', '#234027', '#2c4f30', '#3a5c33', '#b88f2f', '#e8b84b', '#ff5d4d'];
@@ -617,19 +533,11 @@ function buildWheelSegments() {
     return { start, end: acc, mid: start + sweep / 2, prize: WHEEL_PRIZES[i], color: WHEEL_COLORS[i] };
   });
 }
-
 const wheelSegments = buildWheelSegments();
 
 function polarToCartesian(cx, cy, r, angleDeg) {
-  const angleRad = (angleDeg - 90) * Math.PI / 180;
-  return { x: cx + r * Math.cos(angleRad), y: cy + r * Math.sin(angleRad) };
-}
-
-function describeArc(cx, cy, r, startAngle, endAngle) {
-  const start = polarToCartesian(cx, cy, r, endAngle);
-  const end = polarToCartesian(cx, cy, r, startAngle);
-  const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
-  return ["M", cx, cy, "L", start.x, start.y, "A", r, r, 0, largeArcFlag, 0, end.x, end.y, "Z"].join(" ");
+  const rad = (angleDeg - 90) * Math.PI / 180;
+  return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
 }
 
 function drawWheel() {
@@ -638,16 +546,21 @@ function drawWheel() {
   const cx = 50, cy = 50, r = 45;
   let html = '';
   wheelSegments.forEach(seg => {
-    const labelPos = polarToCartesian(cx, cy, r * 0.7, seg.mid);
-    html += `<path d="${describeArc(cx, cy, r, seg.start, seg.end)}" fill="${seg.color}" stroke="rgba(255,255,255,0.2)" stroke-width="0.5"/>`;
-    html += `<text x="${labelPos.x}" y="${labelPos.y}" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="5" font-weight="bold">${seg.prize}</text>`;
+    const start = polarToCartesian(cx, cy, r, seg.end);
+    const end = polarToCartesian(cx, cy, r, seg.start);
+    const large = seg.end - seg.start <= 180 ? "0" : "1";
+    html += `<path d="M${cx},${cy} L${start.x},${start.y} A${r},${r} 0 ${large} 0 ${end.x},${end.y} Z" fill="${seg.color}" stroke="rgba(255,255,255,0.2)" stroke-width="0.5"/>`;
+    const label = polarToCartesian(cx, cy, r * 0.7, seg.mid);
+    html += `<text x="${label.x}" y="${label.y}" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="5" font-weight="bold">${seg.prize}</text>`;
   });
   html += `<circle cx="${cx}" cy="${cy}" r="10" fill="#1a1208" stroke="var(--gold-bright)" stroke-width="1.5"/>`;
   html += `<text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" fill="var(--gold-bright)" font-size="4" font-weight="bold">🎡</text>`;
   svg.innerHTML = html;
 }
 
-// ===================== FONCTIONS UTILITAIRES =====================
+// ==========================================
+// UTILITAIRES
+// ==========================================
 function showToast(msg) {
   const toast = document.getElementById('toast');
   toast.textContent = msg;
@@ -671,9 +584,69 @@ function updateUI() {
   document.getElementById('streakDisplay').textContent = userStreak;
   document.getElementById('pointsDisplay').textContent = userPoints;
   
-  document.getElementById('loginCard').style.display = currentUsername ? 'none' : 'block';
-  document.getElementById('quizCard').style.display = currentUsername ? 'block' : 'none';
-  document.getElementById('wheelCard').style.display = currentUsername ? 'block' : 'none';
-  document.getElementById('shootCard').style.display = currentUsername ? 'block' : 'none';
-  document.getElementById('packCard').style.display = currentUsername ? 'block' : 'none';
-  document.getElementById('shareCard').style.display = currentUsername ? 'block' : 'none'
+  const isLoggedIn = !!currentUsername;
+  document.getElementById('loginCard').style.display = isLoggedIn ? 'none' : 'block';
+  document.getElementById('quizCard').style.display = isLoggedIn ? 'block' : 'none';
+  document.getElementById('wheelCard').style.display = isLoggedIn ? 'block' : 'none';
+  document.getElementById('shootCard').style.display = isLoggedIn ? 'block' : 'none';
+  document.getElementById('packCard').style.display = isLoggedIn ? 'block' : 'none';
+  document.getElementById('shareCard').style.display = isLoggedIn ? 'block' : 'none';
+  document.getElementById('leaderboardCard').style.display = isLoggedIn ? 'block' : 'none';
+  
+  if (isLoggedIn) {
+    if (!quizCompleted) startQuiz();
+    document.getElementById('spinBtn').disabled = wheelSpun;
+    document.getElementById('spinBtn').textContent = wheelSpun ? '✅ Déjà tournée' : '📺 Regarder une pub Pi et tourner';
+    document.querySelectorAll('.zone-buttons button').forEach(b => b.disabled = shootDone);
+  }
+}
+
+// ==========================================
+// CONNEXION PI
+// ==========================================
+async function loginWithPi() {
+  console.log('🔑 Connexion Pi...');
+  
+  if (!piReady || !PiNetwork) {
+    showToast('⚠️ Pi non disponible - recharge dans le Pi Browser');
+    return;
+  }
+  
+  try {
+    const scopes = ['username', 'payments'];
+    const auth = await PiNetwork.authenticate(scopes, onIncompletePaymentFound);
+    
+    currentUsername = auth.user.username;
+    showToast('✅ Connecté : ' + currentUsername);
+    onLoginSuccess();
+  } catch (error) {
+    console.error('❌ Erreur auth:', error);
+    showToast('❌ Connexion échouée - recharge et réessaie');
+  }
+}
+
+function onIncompletePaymentFound(payment) {
+  console.log('💳 Paiement en attente:', payment);
+}
+
+function onLoginSuccess() {
+  saveAll();
+  updateUI();
+  drawWheel();
+  loadLeaderboard();
+}
+
+// ==========================================
+// QUIZ
+// ==========================================
+function startQuiz() {
+  const shuffled = [...quizQuestions].sort(() => Math.random() - 0.5);
+  currentQuiz = shuffled;
+  selectedAnswers = new Array(5).fill(null);
+  currentQuestionIndex = 0;
+  renderCurrentQuestion();
+}
+
+function renderCurrentQuestion() {
+  const q = currentQuiz[currentQuestionIndex];
+  document.getElementById('quizProgress').textContent
