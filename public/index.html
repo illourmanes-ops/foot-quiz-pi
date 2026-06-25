@@ -30,6 +30,7 @@
     width: 100%;
     margin: 5px 0;
   }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
   .btn-gold { background: linear-gradient(135deg, #ffd166, #b88f2f); color: #1a1208; }
   .btn-purple { background: linear-gradient(135deg, #a855f7, #8c3ce0); color: white; }
   .card {
@@ -88,6 +89,44 @@
   }
   .zone-buttons { display: flex; gap: 8px; }
   .zone-buttons button { font-size: 0.85rem; }
+
+  /* Overlay pub */
+  .ad-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.9);
+    z-index: 999;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+  }
+  .ad-overlay.show { display: flex; }
+  .ad-box {
+    background: #1a1a2e;
+    border: 2px solid #a855f7;
+    border-radius: 20px;
+    padding: 30px;
+    text-align: center;
+    max-width: 300px;
+  }
+  .ad-box h2 { color: #ffd166; margin-bottom: 10px; }
+  .ad-box p { color: #ccc; margin-bottom: 20px; font-size: 0.9rem; }
+  .ad-timer {
+    font-size: 3rem;
+    font-weight: 700;
+    color: #ffd166;
+    margin: 20px 0;
+  }
+  .btn-close-ad {
+    background: #3ddc84;
+    color: #1a1208;
+    padding: 12px 24px;
+    border-radius: 10px;
+    font-weight: 700;
+    cursor: pointer;
+    display: none;
+  }
 </style>
 </head>
 <body>
@@ -107,9 +146,12 @@
 
 <!-- CARTE CONNEXION -->
 <div class="card" id="loginCard">
-  <h2>🔐 Connexion</h2>
-  <p>Connecte-toi avec Pi Network</p>
-  <button class="btn-gold" onclick="doLogin()">Se connecter avec Pi</button>
+  <h2>🔐 Connexion Pi Network</h2>
+  <p>Connecte-toi pour jouer et gagner des Pi !</p>
+  <button class="btn-purple" onclick="doLogin()">🪙 Se connecter avec Pi</button>
+  <p style="text-align:center; margin-top:10px; font-size:0.75rem; color:#888;">
+    Ouvre cette page dans le Pi Browser
+  </p>
 </div>
 
 <!-- CARTE QUIZ -->
@@ -121,36 +163,46 @@
     <button onclick="prevQuestion()" id="prevBtn" style="display:none;">← Précédent</button>
     <button onclick="nextQuestion()" id="nextBtn" style="display:none;">Suivant →</button>
   </div>
-  <button class="btn-gold" onclick="submitQuiz()">Valider</button>
+  <button class="btn-gold" onclick="submitQuiz()">Valider mes réponses</button>
 </div>
 
-<!-- CARTE ROUE -->
+<!-- CARTE ROUE AVEC PUB -->
 <div class="card" id="wheelCard" style="display:none; text-align:center;">
-  <h2>🎡 Roue</h2>
+  <h2>🎡 Roue quotidienne</h2>
+  <p style="font-size:0.85rem; color:#a3b3a8; margin-bottom:10px;">
+    Regarde une pub Pi pour tourner la roue !
+  </p>
   <div class="wheel-wrap">
     <div class="wheel-pointer"></div>
     <svg id="wheelSvg" width="200" height="200" viewBox="0 0 100 100"></svg>
   </div>
-  <button class="btn-purple" onclick="spinWheel()" id="spinBtn">Regarder pub et tourner</button>
+  <button class="btn-purple" onclick="showAdThenSpin()" id="spinBtn">
+    📺 Regarder une pub Pi et tourner
+  </button>
 </div>
 
 <!-- CARTE TIR -->
 <div class="card" id="shootCard" style="display:none;">
   <h2>🥅 Tirs au but</h2>
+  <p style="font-size:0.85rem; color:#a3b3a8; margin-bottom:10px;">
+    Choisis ta zone ! Si le gardien plonge du mauvais côté, tu marques !
+  </p>
   <div class="goal-frame"><span id="ballEmoji">⚽</span></div>
   <div class="zone-buttons">
     <button onclick="doShoot('gauche')">⬅️ Gauche</button>
     <button onclick="doShoot('centre')">⬆️ Centre</button>
     <button onclick="doShoot('droite')">➡️ Droite</button>
   </div>
-  <p id="shootResult" style="text-align:center;"></p>
+  <p id="shootResult" style="text-align:center; margin-top:10px;"></p>
 </div>
 
 <!-- CARTE PACK -->
 <div class="card" id="packCard" style="display:none;">
   <h2>📦 Pack Bonus</h2>
-  <p>100 points pour 0.1 Pi</p>
-  <button class="btn-purple" onclick="buyPack()">Acheter 0.1 Pi</button>
+  <p style="font-size:0.85rem; color:#a3b3a8; margin-bottom:10px;">
+    Soutiens l'app et reçois 100 points bonus !
+  </p>
+  <button class="btn-purple" onclick="buyPack()">🪙 Acheter pour 0.1 Pi</button>
 </div>
 
 <!-- CARTE CLASSEMENT -->
@@ -159,23 +211,63 @@
   <div id="leaderboardList"></div>
 </div>
 
+<!-- OVERLAY PUBLICITÉ -->
+<div class="ad-overlay" id="adOverlay">
+  <div class="ad-box">
+    <h2>📺 Publicité Pi Network</h2>
+    <p>Soutiens l'app en regardant cette pub !</p>
+    <div class="ad-timer" id="adTimer">5</div>
+    <p style="font-size:0.8rem; color:#888;">La roue tournera automatiquement après la pub</p>
+    <button class="btn-close-ad" id="btnCloseAd" onclick="closeAdAndSpin()">
+      ✅ Tourner la roue !
+    </button>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
 // ==========================================
-// TOUTES LES FONCTIONS EN GLOBAL
+// INITIALISATION PI SDK
 // ==========================================
-console.log('🚀 SCRIPT CHARGÉ');
+const PI_API_KEY = "duruepl6zs2bzi2c0zxhqzmi4tppayycm1rh5neiflzsec8qpaqotcmex0bdvfy2";
+let PiNetwork = null;
+let piReady = false;
 
-let currentUser = null;
-let points = 0;
-let streak = 0;
+async function initPi() {
+  try {
+    Pi.init({ version: "2.0", sandbox: true });
+    PiNetwork = Pi;
+    piReady = true;
+    console.log('✅ Pi SDK prêt');
+  } catch (e) {
+    console.log('⚠️ Pi SDK non disponible - mode démo');
+  }
+}
+
+// ==========================================
+// ÉTAT
+// ==========================================
+let currentUser = localStorage.getItem('fqp_user') || null;
+let points = parseInt(localStorage.getItem('fqp_points') || '0');
+let streak = parseInt(localStorage.getItem('fqp_streak') || '0');
 let quizDone = false;
 let wheelDone = false;
 let shootDone = false;
 let currentQuiz = [];
 let answers = [];
 let questionIndex = 0;
+let adTimerInterval = null;
+
+// Vérifier nouveau jour
+const today = new Date().toDateString();
+if (localStorage.getItem('fqp_date') !== today) {
+  quizDone = false;
+  wheelDone = false;
+  shootDone = false;
+  if (currentUser) streak++;
+  localStorage.setItem('fqp_date', today);
+}
 
 // Questions
 const questions = [
@@ -187,24 +279,143 @@ const questions = [
 ];
 
 // ==========================================
-// FONCTIONS BOUTONS
+// FONCTIONS PI NETWORK
 // ==========================================
-function doLogin() {
-  console.log('🔑 doLogin appelé');
-  currentUser = 'Joueur_' + Math.random().toString(36).substr(2, 5);
-  showToast('✅ Connecté : ' + currentUser);
+async function doLogin() {
+  console.log('🔑 Connexion Pi...');
+  
+  if (!piReady || !PiNetwork) {
+    // Mode démo
+    currentUser = 'Pionnier_' + Math.random().toString(36).substr(2, 5);
+    showToast('✅ Connecté (démo) : ' + currentUser);
+    onLoginSuccess();
+    return;
+  }
+  
+  try {
+    const auth = await PiNetwork.authenticate(['username', 'payments'], onIncompletePayment);
+    currentUser = auth.user.username;
+    showToast('✅ Connecté : ' + currentUser);
+    onLoginSuccess();
+  } catch (e) {
+    console.error('❌ Erreur auth:', e);
+    currentUser = 'Pionnier_' + Math.random().toString(36).substr(2, 5);
+    showToast('⚠️ Mode démo : ' + currentUser);
+    onLoginSuccess();
+  }
+}
+
+function onIncompletePayment(payment) {
+  console.log('💳 Paiement en attente:', payment);
+}
+
+async function showAdThenSpin() {
+  if (wheelDone) {
+    showToast('⚠️ Roue déjà tournée aujourd\'hui');
+    return;
+  }
+  
+  // Afficher l'overlay de pub
+  const overlay = document.getElementById('adOverlay');
+  overlay.classList.add('show');
+  
+  // Lancer le compte à rebours
+  let timeLeft = 5;
+  document.getElementById('adTimer').textContent = timeLeft;
+  document.getElementById('btnCloseAd').style.display = 'none';
+  
+  adTimerInterval = setInterval(() => {
+    timeLeft--;
+    document.getElementById('adTimer').textContent = timeLeft;
+    
+    if (timeLeft <= 0) {
+      clearInterval(adTimerInterval);
+      document.getElementById('adTimer').textContent = '✓';
+      document.getElementById('btnCloseAd').style.display = 'block';
+    }
+  }, 1000);
+  
+  // Appeler la pub Pi si disponible
+  if (piReady && PiNetwork && PiNetwork.Ads) {
+    try {
+      console.log('📺 Lancement pub Pi...');
+      await PiNetwork.Ads.showAd({ adType: 'interstitial' });
+      console.log('✅ Pub Pi terminée');
+    } catch (e) {
+      console.log('⚠️ Pub Pi non disponible:', e.message);
+    }
+  }
+}
+
+function closeAdAndSpin() {
+  // Fermer l'overlay
+  clearInterval(adTimerInterval);
+  document.getElementById('adOverlay').classList.remove('show');
+  
+  // Lancer la roue
+  executeSpin();
+}
+
+function executeSpin() {
+  const spinBtn = document.getElementById('spinBtn');
+  spinBtn.disabled = true;
+  spinBtn.textContent = '🎡 La roue tourne...';
+  
+  const svg = document.getElementById('wheelSvg');
+  const rotation = 360 * 5 + Math.random() * 360;
+  svg.style.transform = `rotate(${rotation}deg)`;
+  
+  setTimeout(() => {
+    const angle = (360 - (rotation % 360)) % 360;
+    let prize = 5; // Valeur par défaut
+    
+    const weights = [25, 25, 20, 15, 10, 4, 1];
+    const prizes = [5, 10, 15, 20, 25, 50, 100];
+    const sum = weights.reduce((a,b) => a+b, 0);
+    let acc = 0;
+    
+    weights.forEach((w, i) => {
+      const start = acc;
+      acc += (w / sum) * 360;
+      if (angle >= start && angle < acc) prize = prizes[i];
+    });
+    
+    points += prize;
+    wheelDone = true;
+    spinBtn.textContent = '✅ Roue déjà tournée';
+    showToast('🎉 +' + prize + ' points gagnés !');
+    saveAll();
+    updateUI();
+  }, 3500);
+}
+
+async function buyPack() {
+  // Paiement Pi
+  if (piReady && PiNetwork) {
+    try {
+      showToast('🪙 Traitement du paiement Pi...');
+      const payment = await PiNetwork.createPayment({
+        amount: 0.1,
+        memo: "Pack Bonus Foot Quiz Pi - 100 points",
+        metadata: { type: 'pack_bonus' }
+      });
+      
+      await PiNetwork.waitForTransaction(payment.identifier);
+      console.log('✅ Paiement réussi');
+    } catch (e) {
+      console.log('⚠️ Mode test:', e.message);
+    }
+  }
+  
+  points += 100;
+  showToast('✅ Pack acheté ! +100 points');
+  saveAll();
   updateUI();
 }
 
-function changeLang(lang) {
-  console.log('🌍 changeLang:', lang);
-  document.getElementById('btnFR').style.background = lang === 'fr' ? '#e8b84b' : 'rgba(255,255,255,0.1)';
-  document.getElementById('btnFR').style.color = lang === 'fr' ? '#1a1208' : 'white';
-  document.getElementById('btnEN').style.background = lang === 'en' ? '#e8b84b' : 'rgba(255,255,255,0.1)';
-  document.getElementById('btnEN').style.color = lang === 'en' ? '#1a1208' : 'white';
-  showToast('🌍 Langue: ' + lang.toUpperCase());
-}
-
+// ==========================================
+// QUIZ
+// ==========================================
 function startQuiz() {
   currentQuiz = [...questions].sort(() => Math.random() - 0.5);
   answers = new Array(5).fill(null);
@@ -216,7 +427,7 @@ function renderQuestion() {
   const q = currentQuiz[questionIndex];
   document.getElementById('quizProgress').textContent = `Question ${questionIndex + 1}/5`;
   
-  let html = `<p><strong>${q.q}</strong></p>`;
+  let html = `<p style="font-weight:700; margin-bottom:10px;">${q.q}</p>`;
   q.opts.forEach((opt, i) => {
     const sel = answers[questionIndex] === i ? ' selected' : '';
     html += `<button class="option${sel}" onclick="selectAnswer(${i})">${opt}</button>`;
@@ -228,7 +439,6 @@ function renderQuestion() {
 }
 
 function selectAnswer(idx) {
-  console.log('✅ Réponse:', idx);
   answers[questionIndex] = idx;
   renderQuestion();
 }
@@ -243,29 +453,129 @@ function nextQuestion() {
 
 function submitQuiz() {
   if (answers.includes(null)) {
-    showToast('⚠️ Réponds à toutes les questions');
+    showToast('⚠️ Réponds à toutes les questions !');
     return;
   }
+  
   let correct = 0;
   currentQuiz.forEach((q, i) => { if (answers[i] === q.correct) correct++; });
-  points += correct * 10;
+  
+  const earned = correct * 10;
+  points += earned;
   quizDone = true;
-  showToast('🎉 ' + correct + '/5 • +' + (correct*10) + ' points');
+  
+  showToast(`🎉 ${correct}/5 bonnes réponses ! +${earned} points`);
+  saveAll();
   updateUI();
 }
 
-// Roue
-const prizes = [5, 10, 15, 20, 25, 50, 100];
-const colors = ['#1d3322', '#234027', '#2c4f30', '#3a5c33', '#b88f2f', '#e8b84b', '#ff5d4d'];
+// ==========================================
+// TIRS AU BUT
+// ==========================================
+function doShoot(zone) {
+  if (shootDone) {
+    showToast('⚠️ Tir déjà effectué aujourd\'hui');
+    return;
+  }
+  
+  const zones = ['gauche', 'centre', 'droite'];
+  const keeper = zones[Math.floor(Math.random() * 3)];
+  const ball = document.getElementById('ballEmoji');
+  
+  // Animation
+  ball.style.transform = 'scale(1.5)';
+  setTimeout(() => ball.style.transform = 'scale(1)', 300);
+  
+  setTimeout(() => {
+    const el = document.getElementById('shootResult');
+    if (zone !== keeper) {
+      const pts = Math.floor(Math.random() * 21) + 10;
+      points += pts;
+      el.textContent = '⚽ BUT ! Le gardien a plongé du mauvais côté ! +' + pts + ' pts';
+      el.style.color = '#3ddc84';
+      showToast('⚽ But ! +' + pts + ' points');
+    } else {
+      el.textContent = '😞 Arrêté ! Le gardien a deviné...';
+      el.style.color = '#ff5d4d';
+      showToast('😞 Arrêté par le gardien');
+    }
+    shootDone = true;
+    saveAll();
+    updateUI();
+  }, 600);
+}
+
+// ==========================================
+// UTILITAIRES
+// ==========================================
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+function saveAll() {
+  localStorage.setItem('fqp_user', currentUser || '');
+  localStorage.setItem('fqp_points', points);
+  localStorage.setItem('fqp_streak', streak);
+  localStorage.setItem('fqp_quiz_done', quizDone);
+  localStorage.setItem('fqp_wheel_done', wheelDone);
+  localStorage.setItem('fqp_shoot_done', shootDone);
+  localStorage.setItem('fqp_date', today);
+}
+
+function changeLang(lang) {
+  document.getElementById('btnFR').style.background = lang === 'fr' ? '#e8b84b' : 'rgba(255,255,255,0.1)';
+  document.getElementById('btnFR').style.color = lang === 'fr' ? '#1a1208' : 'white';
+  document.getElementById('btnEN').style.background = lang === 'en' ? '#e8b84b' : 'rgba(255,255,255,0.1)';
+  document.getElementById('btnEN').style.color = lang === 'en' ? '#1a1208' : 'white';
+  showToast('🌍 Langue: ' + lang.toUpperCase());
+}
+
+function updateUI() {
+  document.getElementById('userDisplay').textContent = currentUser || '—';
+  document.getElementById('streakDisplay').textContent = streak;
+  document.getElementById('pointsDisplay').textContent = points;
+  
+  const logged = !!currentUser;
+  document.getElementById('loginCard').style.display = logged ? 'none' : 'block';
+  document.getElementById('quizCard').style.display = logged ? 'block' : 'none';
+  document.getElementById('wheelCard').style.display = logged ? 'block' : 'none';
+  document.getElementById('shootCard').style.display = logged ? 'block' : 'none';
+  document.getElementById('packCard').style.display = logged ? 'block' : 'none';
+  document.getElementById('leaderboardCard').style.display = logged ? 'block' : 'none';
+  
+  if (logged && !quizDone) startQuiz();
+  
+  if (logged && wheelDone) {
+    document.getElementById('spinBtn').textContent = '✅ Roue déjà tournée';
+    document.getElementById('spinBtn').disabled = true;
+  }
+  
+  document.getElementById('leaderboardList').innerHTML = `
+    <p style="padding:8px;">1. ${currentUser || 'Toi'} - <strong>${points} pts</strong></p>
+    <p style="padding:8px;">2. StarPlayer - 450 pts</p>
+    <p style="padding:8px;">3. FootKing - 380 pts</p>
+  `;
+}
+
+// ==========================================
+// ROUE (DESSIN)
+// ==========================================
+const wheelPrizes = [5, 10, 15, 20, 25, 50, 100];
+const wheelColors = ['#1d3322', '#234027', '#2c4f30', '#3a5c33', '#b88f2f', '#e8b84b', '#ff5d4d'];
+const wheelWeights = [25, 25, 20, 15, 10, 4, 1];
 
 function drawWheel() {
   const svg = document.getElementById('wheelSvg');
+  if (!svg) return;
+  
   let html = '';
-  const total = [25, 25, 20, 15, 10, 4, 1];
-  const sum = total.reduce((a,b) => a+b, 0);
+  const sum = wheelWeights.reduce((a,b) => a+b, 0);
   let acc = 0;
   
-  total.forEach((w, i) => {
+  wheelWeights.forEach((w, i) => {
     const start = acc;
     const sweep = (w / sum) * 360;
     acc += sweep;
@@ -280,125 +590,28 @@ function drawWheel() {
     const y1 = 50 + 45 * Math.sin(startRad);
     const x2 = 50 + 45 * Math.cos(endRad);
     const y2 = 50 + 45 * Math.sin(endRad);
-    const mx = 50 + 30 * Math.cos(midRad);
-    const my = 50 + 30 * Math.sin(midRad);
+    const mx = 50 + 32 * Math.cos(midRad);
+    const my = 50 + 32 * Math.sin(midRad);
     
     const large = sweep > 180 ? 1 : 0;
-    html += `<path d="M50,50 L${x1},${y1} A45,45 0 ${large} 0 ${x2},${y2} Z" fill="${colors[i]}" stroke="rgba(255,255,255,0.2)" stroke-width="0.5"/>`;
-    html += `<text x="${mx}" y="${my}" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="5" font-weight="bold">${prizes[i]}</text>`;
+    html += `<path d="M50,50 L${x1},${y1} A45,45 0 ${large} 0 ${x2},${y2} Z" fill="${wheelColors[i]}" stroke="rgba(255,255,255,0.2)" stroke-width="0.5"/>`;
+    html += `<text x="${mx}" y="${my}" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="5" font-weight="bold">${wheelPrizes[i]}</text>`;
   });
   
   html += `<circle cx="50" cy="50" r="10" fill="#1a1208" stroke="#ffd166" stroke-width="1.5"/>`;
-  html += `<text x="50" y="50" text-anchor="middle" dominant-baseline="middle" fill="#ffd166" font-size="4">🎡</text>`;
+  html += `<text x="50" y="50" text-anchor="middle" dominant-baseline="middle" fill="#ffd166" font-size="4" font-weight="bold">🎡</text>`;
   svg.innerHTML = html;
-}
-
-function spinWheel() {
-  if (wheelDone) { showToast('⚠️ Déjà tournée'); return; }
-  
-  document.getElementById('spinBtn').disabled = true;
-  const svg = document.getElementById('wheelSvg');
-  const rotation = 360 * 5 + Math.random() * 360;
-  svg.style.transform = `rotate(${rotation}deg)`;
-  
-  setTimeout(() => {
-    const angle = (360 - (rotation % 360)) % 360;
-    let prize = prizes[0];
-    const total = [25, 25, 20, 15, 10, 4, 1];
-    const sum = total.reduce((a,b) => a+b, 0);
-    let acc = 0;
-    total.forEach((w, i) => {
-      const start = acc;
-      acc += (w / sum) * 360;
-      if (angle >= start && angle < acc) prize = prizes[i];
-    });
-    
-    points += prize;
-    wheelDone = true;
-    document.getElementById('spinBtn').textContent = '✅ Déjà tournée';
-    showToast('🎉 +' + prize + ' points !');
-    updateUI();
-  }, 3500);
-}
-
-function doShoot(zone) {
-  if (shootDone) { showToast('⚠️ Déjà tiré'); return; }
-  
-  const zones = ['gauche', 'centre', 'droite'];
-  const keeper = zones[Math.floor(Math.random() * 3)];
-  const ball = document.getElementById('ballEmoji');
-  
-  ball.style.transform = 'scale(1.5)';
-  setTimeout(() => ball.style.transform = 'scale(1)', 300);
-  
-  setTimeout(() => {
-    const el = document.getElementById('shootResult');
-    if (zone !== keeper) {
-      const pts = Math.floor(Math.random() * 21) + 10;
-      points += pts;
-      el.textContent = '⚽ BUT ! +' + pts + ' pts';
-      el.style.color = '#3ddc84';
-      showToast('⚽ +' + pts + ' points !');
-    } else {
-      el.textContent = '😞 Arrêté !';
-      el.style.color = '#ff5d4d';
-    }
-    shootDone = true;
-    updateUI();
-  }, 600);
-}
-
-function buyPack() {
-  points += 100;
-  showToast('✅ +100 points !');
-  updateUI();
-}
-
-// ==========================================
-// UI
-// ==========================================
-function showToast(msg) {
-  console.log('🔔', msg);
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 3000);
-}
-
-function updateUI() {
-  document.getElementById('userDisplay').textContent = currentUser || '—';
-  document.getElementById('streakDisplay').textContent = streak;
-  document.getElementById('pointsDisplay').textContent = points;
-  
-  document.getElementById('loginCard').style.display = currentUser ? 'none' : 'block';
-  document.getElementById('quizCard').style.display = currentUser ? 'block' : 'none';
-  document.getElementById('wheelCard').style.display = currentUser ? 'block' : 'none';
-  document.getElementById('shootCard').style.display = currentUser ? 'block' : 'none';
-  document.getElementById('packCard').style.display = currentUser ? 'block' : 'none';
-  document.getElementById('leaderboardCard').style.display = currentUser ? 'block' : 'none';
-  
-  if (currentUser && !quizDone) startQuiz();
-  
-  document.getElementById('leaderboardList').innerHTML = `
-    <p>1. ${currentUser || 'Toi'} - ${points} pts</p>
-    <p>2. StarPlayer - 450 pts</p>
-    <p>3. FootKing - 380 pts</p>
-  `;
 }
 
 // ==========================================
 // INIT
 // ==========================================
-function init() {
-  console.log('🚀 INIT');
-  drawWheel();
-  updateUI();
-  console.log('✅ PRÊT - Tous les boutons fonctionnent');
-}
-
-// Démarrer
-document.addEventListener('DOMContentLoaded', init);
-console.log('📜 Script chargé et prêt');
-</script>
-</body>
-</html>
+async function init() {
+  console.log('🚀 Foot Quiz Pi - Démarrage');
+  
+  // Init Pi
+  await initPi();
+  
+  // Restaurer état
+  if (currentUser) {
+ 
