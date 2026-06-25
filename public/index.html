@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Foot Quiz Pi</title>
+<title>Foot Quiz Pi - Version Ultime</title>
 <script src="https://sdk.minepi.com/pi-sdk.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -17,20 +17,29 @@
   button {
     border: none;
     border-radius: 12px;
-    padding: 16px;
-    font-size: 16px;
+    padding: 14px;
+    font-size: 15px;
     font-weight: 700;
     cursor: pointer;
     width: 100%;
-    margin: 5px 0;
+    margin: 4px 0;
+    transition: all 0.2s;
   }
-  button:active { transform: scale(0.97); }
+  button:active { transform: scale(0.96); }
   button:disabled { opacity: 0.5; cursor: not-allowed; }
   
-  .btn-yellow { background: #e8b84b; color: #1a1208; }
-  .btn-purple { background: #8c3ce0; color: white; }
-  .btn-red { background: #ff5d4d; color: white; }
-  .btn-green { background: #3ddc84; color: #1a1208; }
+  .btn-yellow { background: linear-gradient(135deg, #ffd166, #b88f2f); color: #1a1208; }
+  .btn-purple { background: linear-gradient(135deg, #a855f7, #7c3aed); color: white; }
+  .btn-green { background: linear-gradient(135deg, #3ddc84, #22c55e); color: #1a1208; }
+  .btn-red { background: linear-gradient(135deg, #ff5d4d, #ef4444); color: white; }
+  .btn-blue { background: linear-gradient(135deg, #4a9eff, #3b82f6); color: white; }
+  .btn-orange { background: linear-gradient(135deg, #ff8c42, #f97316); color: white; }
+  .btn-gold { background: linear-gradient(135deg, #ffd700, #fbbf24); color: #1a1208; font-size: 18px; padding: 18px; animation: glow 2s infinite; }
+  
+  @keyframes glow {
+    0%, 100% { box-shadow: 0 0 10px #ffd700; }
+    50% { box-shadow: 0 0 30px #ffd700, 0 0 50px #fbbf24; }
+  }
   
   .card {
     background: rgba(255,255,255,0.05);
@@ -38,139 +47,140 @@
     border-radius: 16px;
     padding: 20px;
     margin: 10px auto;
-    max-width: 400px;
+    max-width: 420px;
   }
-  .card h2 { color: #e8b84b; margin-bottom: 10px; font-size: 18px; }
-  .card p { color: #aaa; margin-bottom: 15px; font-size: 14px; }
+  .card h2 { color: #e8b84b; margin-bottom: 8px; font-size: 18px; display: flex; align-items: center; gap: 8px; }
+  .card p { color: #aaa; margin-bottom: 12px; font-size: 13px; }
   
   .scoreboard {
     display: flex;
     justify-content: space-around;
     background: rgba(255,255,255,0.05);
     border-radius: 16px;
-    padding: 15px;
-    max-width: 400px;
-    margin: 0 auto 15px;
+    padding: 12px;
+    max-width: 420px;
+    margin: 0 auto 10px;
   }
   .scoreboard div { text-align: center; }
-  .scoreboard .label { font-size: 11px; color: #888; }
-  .scoreboard .value { font-size: 22px; color: #ffd166; font-weight: 700; }
+  .scoreboard .label { font-size: 10px; color: #888; }
+  .scoreboard .value { font-size: 20px; color: #ffd166; font-weight: 700; }
   
   .toast {
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: #ffd166;
-    color: #1a1208;
-    padding: 12px 20px;
-    border-radius: 10px;
-    font-weight: 700;
-    z-index: 999;
-    display: none;
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: #ffd166; color: #1a1208; padding: 12px 20px;
+    border-radius: 10px; font-weight: 700; z-index: 999;
+    display: none; max-width: 90%; text-align: center;
   }
-  .toast.show { display: block; }
+  .toast.show { display: block; animation: fadeUp 0.3s ease; }
+  
+  @keyframes fadeUp { from { opacity:0; transform: translateX(-50%) translateY(20px); } to { opacity:1; transform: translateX(-50%) translateY(0); } }
   
   .option-btn {
     background: rgba(255,255,255,0.05);
-    border: 1px solid #2a4a30;
-    color: white;
-    text-align: left;
-    padding: 12px;
-    border-radius: 10px;
-    cursor: pointer;
-    margin: 4px 0;
+    border: 1px solid #2a4a30; color: white;
+    text-align: left; padding: 12px; border-radius: 10px;
+    cursor: pointer; margin: 4px 0;
   }
-  .option-btn.selected {
-    border-color: #e8b84b;
-    background: rgba(232,184,75,0.15);
-  }
+  .option-btn.selected { border-color: #e8b84b; background: rgba(232,184,75,0.15); }
   
   .ad-overlay {
-    display: none;
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.95);
-    z-index: 1000;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
+    display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.95); z-index: 1000;
+    flex-direction: column; align-items: center; justify-content: center; text-align: center;
   }
   .ad-overlay.show { display: flex; }
   
-  .ad-container {
-    background: #111;
-    border: 2px solid #8c3ce0;
-    border-radius: 20px;
-    padding: 30px;
-    max-width: 350px;
-    width: 90%;
-  }
-  
-  .ad-spinner {
-    width: 60px;
-    height: 60px;
-    border: 4px solid rgba(255,255,255,0.1);
-    border-top: 4px solid #8c3ce0;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin: 0 auto 20px;
-  }
-  
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
-  
-  .ad-status {
-    color: #ffd166;
-    font-size: 16px;
+  .calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 5px;
     margin: 10px 0;
   }
-  
-  .ad-error {
-    color: #ff5d4d;
-    font-size: 14px;
-    margin: 10px 0;
+  .calendar-day {
+    aspect-ratio: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.03);
   }
+  .calendar-day.claimed { background: #3ddc84; color: #1a1208; }
+  .calendar-day.today { border: 2px solid #ffd166; animation: pulse 1.5s infinite; }
+  .calendar-day.locked { opacity: 0.3; }
+  
+  @keyframes pulse { 0%,100% { border-color: #ffd166; } 50% { border-color: #fbbf24; } }
+  
+  .achievement {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px; border-radius: 8px; margin: 3px 0;
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+  }
+  .achievement.unlocked { background: rgba(61,220,132,0.1); border-color: #3ddc84; }
+  
+  .jackpot-display {
+    font-size: 40px; font-weight: 700; color: #ffd700;
+    text-align: center; animation: glow 1s infinite;
+  }
+  
+  .nav-tabs { display: flex; gap: 4px; margin-bottom: 10px; flex-wrap: wrap; }
+  .nav-tab {
+    flex: 1; min-width: 55px; padding: 8px 4px; font-size: 10px;
+    border-radius: 8px; background: rgba(255,255,255,0.05); color: #aaa;
+    cursor: pointer; text-align: center; font-weight: 600;
+  }
+  .nav-tab.active { background: #e8b84b; color: #1a1208; }
+  
+  .referral-link {
+    background: rgba(255,255,255,0.05); border: 1px dashed #e8b84b;
+    padding: 10px; border-radius: 8px; word-break: break-all;
+    font-size: 11px; color: #ffd166; margin: 10px 0;
+  }
+  
+  .streak-fire { font-size: 24px; animation: bounce 0.5s infinite; }
+  @keyframes bounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
 
-  .reset-link {
-    color: #ff5d4d;
-    text-align: center;
-    font-size: 12px;
-    cursor: pointer;
-    margin-top: 10px;
-    text-decoration: underline;
+  .confetti {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none; z-index: 9999;
   }
 </style>
 </head>
 <body>
 
-<h1 style="text-align:center; color:#ffd166; margin-bottom:5px;">⚽ Foot Quiz Pi</h1>
-<p style="text-align:center; color:#888; margin-bottom:15px; font-size:13px;">Quiz • Roue • Tirs au but</p>
+<h1 style="text-align:center; color:#ffd166; margin-bottom:2px;">⚽ Foot Quiz Pi</h1>
+<p style="text-align:center; color:#888; margin-bottom:10px; font-size:12px;">Quiz • Roue • Missions • Shop • Calendrier • Succès</p>
 
 <div class="scoreboard">
-  <div>
-    <div class="label">JOUEUR</div>
-    <div class="value" id="nameDisplay">—</div>
-  </div>
-  <div>
-    <div class="label">SÉRIE</div>
-    <div class="value" id="streakDisplay">0</div>
-  </div>
-  <div>
-    <div class="label">POINTS</div>
-    <div class="value" id="ptsDisplay">0</div>
-  </div>
+  <div><div class="label">JOUEUR</div><div class="value" id="nameDisplay" style="font-size:16px;">—</div></div>
+  <div><div class="label">NIVEAU</div><div class="value" id="levelDisplay">1</div></div>
+  <div><div class="label">POINTS</div><div class="value" id="ptsDisplay">0</div></div>
+  <div><div class="label">SÉRIE</div><div class="value" id="streakDisplay">0 🔥</div></div>
 </div>
+
+<div id="confettiContainer" class="confetti"></div>
 
 <!-- LOGIN -->
 <div class="card" id="cardLogin">
-  <h2>🔐 Connexion Pi Network</h2>
-  <p>Connecte-toi pour jouer et gagner des Pi</p>
-  <button class="btn-yellow" id="btnLogin">🪙 Se connecter avec Pi</button>
-  <p class="reset-link" onclick="resetAll()">🔄 Réinitialiser toutes les données</p>
+  <h2>🔐 Bienvenue sur Foot Quiz Pi</h2>
+  <p>Le jeu de football qui te récompense en Pi !</p>
+  <button class="btn-gold" id="btnLogin">🪙 Se connecter avec Pi Network</button>
+  <p style="text-align:center; font-size:11px; color:#666; margin-top:8px;">
+    ✓ Quiz quotidien &nbsp; ✓ Roue de la chance &nbsp; ✓ Tirs au but<br>
+    ✓ Missions &nbsp; ✓ Boutique &nbsp; ✓ Calendrier &nbsp; ✓ Succès
+  </p>
+</div>
+
+<!-- CALENDRIER QUOTIDIEN -->
+<div class="card" id="cardCalendar" style="display:none;">
+  <h2>📅 Calendrier du mois</h2>
+  <p>Connecte-toi chaque jour pour des récompenses !</p>
+  <div class="calendar-grid" id="calendarGrid"></div>
+  <button class="btn-gold" id="btnClaimDaily" style="display:none;">🎁 RÉCLAMER MA RÉCOMPENSE</button>
+  <p id="dailyStreakInfo" style="text-align:center; font-size:12px; color:#ffd166;"></p>
 </div>
 
 <!-- QUIZ -->
@@ -179,29 +189,27 @@
   <p id="quizProgress">Question 1/5</p>
   <div id="quizArea"></div>
   <div style="display:flex; gap:5px;">
-    <button id="btnPrev" style="display:none;">← Précédent</button>
-    <button id="btnNext" style="display:none;">Suivant →</button>
+    <button id="btnPrev" style="display:none;">←</button>
+    <button id="btnNext" style="display:none;">→</button>
   </div>
-  <button class="btn-yellow" id="btnSubmitQuiz">Valider</button>
-  <p class="reset-link" onclick="resetAll()">🔄 Réinitialiser toutes les données</p>
+  <button class="btn-yellow" id="btnSubmitQuiz">✅ Valider (10 pts/bonne réponse)</button>
 </div>
 
 <!-- ROUE -->
 <div class="card" id="cardWheel" style="display:none; text-align:center;">
-  <h2>🎡 Roue quotidienne</h2>
-  <p>Regarde une pub Pi pour tourner la roue</p>
+  <h2 style="justify-content:center;">🎡 Roue quotidienne</h2>
+  <p>Regarde une pub Pi et tente ta chance !</p>
   <div style="width:180px; height:180px; margin:0 auto 15px; position:relative;">
     <div style="position:absolute; top:-8px; left:50%; margin-left:-8px; width:0; height:0; border-left:8px solid transparent; border-right:8px solid transparent; border-top:14px solid #ffd166; z-index:2;"></div>
     <svg id="wheelSvg" width="180" height="180" viewBox="0 0 100 100"></svg>
   </div>
   <button class="btn-purple" id="btnSpin">📺 Voir la pub Pi et tourner</button>
-  <p class="reset-link" onclick="resetAll()">🔄 Réinitialiser toutes les données</p>
 </div>
 
 <!-- TIR -->
 <div class="card" id="cardShoot" style="display:none;">
   <h2>🥅 Tir au but</h2>
-  <p>Choisis une zone pour tirer</p>
+  <p>Choisis ta zone ! 10-30 points si tu marques</p>
   <div style="border:3px solid white; border-bottom:none; height:70px; margin:0 auto; max-width:250px; display:flex; align-items:flex-end; justify-content:center; font-size:30px; border-radius:5px 5px 0 0;">⚽</div>
   <div style="display:flex; gap:5px; margin-top:10px;">
     <button onclick="shoot('gauche')">⬅️ Gauche</button>
@@ -209,89 +217,115 @@
     <button onclick="shoot('droite')">➡️ Droite</button>
   </div>
   <p id="shootMsg" style="text-align:center; margin-top:10px;"></p>
-  <p class="reset-link" onclick="resetAll()">🔄 Réinitialiser toutes les données</p>
 </div>
 
-<!-- PACK -->
+<!-- MISSIONS -->
+<div class="card" id="cardMissions" style="display:none;">
+  <h2>🎯 Missions du jour</h2>
+  <div id="missionsList"></div>
+</div>
+
+<!-- JACKPOT -->
+<div class="card" id="cardJackpot" style="display:none; text-align:center;">
+  <h2 style="justify-content:center;">🎰 Jackpot Quotidien</h2>
+  <p>Tirage au sort parmi tous les joueurs connectés</p>
+  <div class="jackpot-display" id="jackpotAmount">500</div>
+  <p style="color:#ffd166;">points à gagner !</p>
+  <p style="font-size:11px; color:#888;">Prochain tirage : <span id="jackpotCountdown">23:59:59</span></p>
+  <button class="btn-green" id="btnEnterJackpot">🎟️ Participer (Gratuit)</button>
+  <p id="jackpotStatus" style="font-size:12px; margin-top:5px;"></p>
+</div>
+
+<!-- SUCCÈS -->
+<div class="card" id="cardAchievements" style="display:none;">
+  <h2>🏅 Succès</h2>
+  <div id="achievementsList"></div>
+</div>
+
+<!-- PARRAINAGE -->
+<div class="card" id="cardReferral" style="display:none;">
+  <h2>👥 Parraine tes amis</h2>
+  <p>Gagne 50 points par ami qui rejoint !</p>
+  <div class="referral-link" id="referralLink"></div>
+  <button class="btn-blue" onclick="copyReferral()">📋 Copier le lien</button>
+  <button class="btn-green" onclick="shareWhatsApp()">📱 Partager WhatsApp</button>
+  <p style="font-size:12px; color:#888; margin-top:8px;">
+    👥 Amis parrainés : <strong id="referralCount">0</strong><br>
+    💰 Points gagnés : <strong id="referralPoints">0</strong>
+  </p>
+</div>
+
+<!-- SHOP -->
+<div class="card" id="cardShop" style="display:none;">
+  <h2>🛒 Boutique</h2>
+  <div class="nav-tabs">
+    <div class="nav-tab active" onclick="showShopCat('boosters')">🚀 Boosters</div>
+    <div class="nav-tab" onclick="showShopCat('skins')">🎨 Skins</div>
+    <div class="nav-tab" onclick="showShopCat('extras')">💎 Pi</div>
+  </div>
+  <div id="shopItems"></div>
+  <div style="margin-top:12px;">
+    <h3 style="color:#ffd166; font-size:13px;">🎒 Inventaire</h3>
+    <div id="inventoryList"></div>
+  </div>
+</div>
+
+<!-- PACK PI -->
 <div class="card" id="cardPack" style="display:none;">
-  <h2>📦 Pack Bonus</h2>
-  <p>100 points pour 0.1 Pi</p>
-  <button class="btn-purple" id="btnPack">🪙 Acheter 0.1 Pi</button>
+  <h2>📦 Pack Pi</h2>
+  <p>Achète des points avec Pi</p>
+  <button class="btn-purple" onclick="buyPiPack(100, 0.1)">🪙 100 pts = 0.1 Pi</button>
+  <button class="btn-purple" onclick="buyPiPack(500, 0.5)">🪙 500 pts = 0.5 Pi</button>
 </div>
 
-<!-- OVERLAY PUB PI -->
+<div style="text-align:center; margin-top:10px;">
+  <span onclick="resetAll()" style="color:#ff5d4d; font-size:11px; cursor:pointer; text-decoration:underline;">🔄 Réinitialiser</span>
+</div>
+
+<!-- OVERLAY PUB -->
 <div class="ad-overlay" id="adOverlay">
-  <div class="ad-container">
-    <div class="ad-spinner" id="adSpinner"></div>
-    <p class="ad-status" id="adStatus">📺 Chargement de la pub Pi...</p>
-    <p class="ad-error" id="adError" style="display:none;"></p>
+  <div style="background:#111; border:2px solid #8c3ce0; border-radius:20px; padding:30px; max-width:350px; width:90%; text-align:center;">
+    <div id="adSpinner" style="width:50px;height:50px;border:4px solid rgba(255,255,255,0.1);border-top:4px solid #8c3ce0;border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 20px;"></div>
+    <p id="adStatus" style="color:#ffd166;">📺 Chargement pub Pi...</p>
+    <p id="adError" style="color:#ff5d4d; display:none;"></p>
   </div>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
-// ==========================================
-// INIT PI SDK
-// ==========================================
+// ========== INIT PI ==========
 let PiReady = false;
-
 async function initPi() {
-  try {
-    Pi.init({ version: "2.0", sandbox: true });
-    PiReady = true;
-    console.log('✅ Pi SDK prêt');
-  } catch (e) {
-    console.log('⚠️ Pi SDK non disponible');
-  }
+  try { Pi.init({ version: "2.0", sandbox: true }); PiReady = true; } catch(e) {}
 }
 
-// ==========================================
-// FONCTION RESET
-// ==========================================
-function resetAll() {
-  if (confirm('Es-tu sûr de vouloir TOUT réinitialiser ?\n\nCela effacera :\n- Ton pseudo\n- Tes points\n- Ta série\n- Le quiz du jour\n- La roue\n- Les tirs')) {
-    localStorage.clear();
-    name = null;
-    pts = 0;
-    streak = 0;
-    quizDone = false;
-    wheelDone = false;
-    shootDone = false;
-    quiz = [];
-    answers = [];
-    qIndex = 0;
-    
-    document.getElementById('nameDisplay').textContent = '—';
-    document.getElementById('streakDisplay').textContent = '0';
-    document.getElementById('ptsDisplay').textContent = '0';
-    document.getElementById('cardLogin').style.display = 'block';
-    document.getElementById('cardQuiz').style.display = 'none';
-    document.getElementById('cardWheel').style.display = 'none';
-    document.getElementById('cardShoot').style.display = 'none';
-    document.getElementById('cardPack').style.display = 'none';
-    
-    document.getElementById('btnSpin').textContent = '📺 Voir la pub Pi et tourner';
-    document.getElementById('btnSpin').disabled = false;
-    document.getElementById('shootMsg').textContent = '';
-    
-    drawWheel();
-    toast('✅ Tout a été réinitialisé !');
-  }
-}
-
-// ==========================================
-// DONNÉES
-// ==========================================
+// ========== DONNÉES ==========
 let name = localStorage.getItem('name') || null;
 let pts = parseInt(localStorage.getItem('pts') || '0');
 let streak = parseInt(localStorage.getItem('streak') || '0');
-let quizDone = false;
-let wheelDone = false;
-let shootDone = false;
-let quiz = [];
-let answers = [];
-let qIndex = 0;
+let quizDone = false, wheelDone = false, shootDone = false;
+let quiz = [], answers = [], qIndex = 0;
+let lastWheelPrize = 0, lastShootScored = false;
+let activeMultiplier = parseFloat(localStorage.getItem('mult') || '1');
+let multEnd = parseInt(localStorage.getItem('multEnd') || '0');
+let shopCat = 'boosters';
+let dailyClaimed = parseInt(localStorage.getItem('dailyDay') || '0');
+let jackpotEntered = localStorage.getItem('jackpot') === 'true';
+let referrals = parseInt(localStorage.getItem('referrals') || '0');
+let refPoints = parseInt(localStorage.getItem('refPts') || '0');
+
+// Vérifier parrainage (simulé)
+const urlParams = new URLSearchParams(window.location.search);
+const ref = urlParams.get('ref');
+if (ref && !name) {
+  localStorage.setItem('referredBy', ref);
+}
+
+let inventory = JSON.parse(localStorage.getItem('inv') || '{"multiplier_2x":0,"extra_wheel":0,"extra_shoot":0,"extra_quiz":0,"golden_ball":0}');
+let missions = JSON.parse(localStorage.getItem('miss') || '[{"id":"quiz_perfect","name":"Quiz Parfait","desc":"5/5 au quiz","reward":50,"done":false},{"id":"wheel_big","name":"Gros Lot","desc":"25+ pts à la roue","reward":30,"done":false},{"id":"shoot_goal","name":"Buteur","desc":"Marque un but","reward":25,"done":false},{"id":"daily_login","name":"Connexion","desc":"Connecte-toi","reward":10,"done":false}]');
+
+let achievements = JSON.parse(localStorage.getItem('achv') || '{"first_login":false,"first_quiz":false,"first_wheel":false,"first_goal":false,"pts_100":false,"pts_500":false,"pts_1000":false,"streak_7":false,"perfect_quiz":false,"buy_shop":false}');
 
 const allQuestions = [
   { q: "Qui a gagné le Mondial 2022 ?", o: ["France","Brésil","Argentine","Allemagne"], c: 2 },
@@ -302,311 +336,137 @@ const allQuestions = [
 ];
 
 const today = new Date().toDateString();
+const dayOfMonth = new Date().getDate();
 if (localStorage.getItem('date') !== today) {
   quizDone = false; wheelDone = false; shootDone = false;
+  missions = JSON.parse('[{"id":"quiz_perfect","name":"Quiz Parfait","desc":"5/5 au quiz","reward":50,"done":false},{"id":"wheel_big","name":"Gros Lot","desc":"25+ pts à la roue","reward":30,"done":false},{"id":"shoot_goal","name":"Buteur","desc":"Marque un but","reward":25,"done":false},{"id":"daily_login","name":"Connexion","desc":"Connecte-toi","reward":10,"done":false}]');
+  jackpotEntered = false;
   if (name) streak++;
   localStorage.setItem('date', today);
 }
 
-// ==========================================
-// FONCTIONS
-// ==========================================
+const dailyRewards = [5,10,15,20,25,30,40,50,60,75,100,150,200,250,300,400,500,600,800,1000,1200,1500,2000,2500,3000,4000,5000,7500,10000,50000];
+
+// ========== FONCTIONS ==========
 function toast(msg) {
   const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = 'toast show';
+  t.textContent = msg; t.className = 'toast show';
   setTimeout(() => t.className = 'toast', 3000);
 }
 
+function addPts(amount) {
+  if (Date.now() < multEnd) amount = Math.floor(amount * activeMultiplier);
+  pts += amount;
+  checkAchievements();
+  save();
+  updateUI();
+}
+
+function getLevel() {
+  const lvls = [
+    {name:"Débutant ⚪",min:0},{name:"Amateur 🔵",min:100},{name:"Semi-Pro 🟣",min:500},
+    {name:"Pro 🟡",min:1000},{name:"Star ⭐",min:2500},{name:"Légende 👑",min:5000},{name:"Ballon d'Or 🏆",min:10000}
+  ];
+  let l = lvls[0];
+  for (let i = lvls.length-1; i >= 0; i--) { if (pts >= lvls[i].min) { l = lvls[i]; break; } }
+  return l;
+}
+
 function save() {
-  localStorage.setItem('name', name || '');
+  localStorage.setItem('name', name||'');
   localStorage.setItem('pts', pts);
   localStorage.setItem('streak', streak);
   localStorage.setItem('quizDone', quizDone);
   localStorage.setItem('wheelDone', wheelDone);
   localStorage.setItem('shootDone', shootDone);
+  localStorage.setItem('miss', JSON.stringify(missions));
+  localStorage.setItem('inv', JSON.stringify(inventory));
+  localStorage.setItem('mult', activeMultiplier);
+  localStorage.setItem('multEnd', multEnd);
+  localStorage.setItem('dailyDay', dailyClaimed);
+  localStorage.setItem('jackpot', jackpotEntered);
+  localStorage.setItem('referrals', referrals);
+  localStorage.setItem('refPts', refPoints);
+  localStorage.setItem('achv', JSON.stringify(achievements));
   localStorage.setItem('date', today);
 }
 
-function updateUI() {
-  document.getElementById('nameDisplay').textContent = name || '—';
-  document.getElementById('streakDisplay').textContent = streak;
-  document.getElementById('ptsDisplay').textContent = pts;
-  
-  const ok = !!name;
-  document.getElementById('cardLogin').style.display = ok ? 'none' : 'block';
-  document.getElementById('cardQuiz').style.display = ok ? 'block' : 'none';
-  document.getElementById('cardWheel').style.display = ok ? 'block' : 'none';
-  document.getElementById('cardShoot').style.display = ok ? 'block' : 'none';
-  document.getElementById('cardPack').style.display = ok ? 'block' : 'none';
-  
-  if (ok && !quizDone) startQuiz();
-  if (wheelDone) {
-    document.getElementById('btnSpin').textContent = '✅ Déjà tournée';
-    document.getElementById('btnSpin').disabled = true;
+// ========== CALENDRIER ==========
+function renderCalendar() {
+  const grid = document.getElementById('calendarGrid');
+  let html = '';
+  for (let i = 1; i <= 30; i++) {
+    let cls = 'calendar-day';
+    if (i <= dailyClaimed) cls += ' claimed';
+    if (i === dailyClaimed + 1) cls += ' today';
+    if (i > dailyClaimed + 1) cls += ' locked';
+    html += `<div class="${cls}"><span style="font-size:9px;">J${i}</span><span>${dailyRewards[i-1]}</span></div>`;
   }
-}
-
-// ==========================================
-// LOGIN
-// ==========================================
-document.getElementById('btnLogin').addEventListener('click', async function() {
-  if (PiReady) {
-    try {
-      const auth = await Pi.authenticate(['username', 'payments'], onIncompletePayment);
-      name = auth.user.username;
-      toast('✅ Connecté : ' + name);
-    } catch (e) {
-      console.log('Auth Pi échouée, mode démo');
-      name = 'Pionnier_' + Math.random().toString(36).substr(2, 5);
-      toast('✅ Mode démo : ' + name);
-    }
+  grid.innerHTML = html;
+  
+  const btn = document.getElementById('btnClaimDaily');
+  if (dailyClaimed < dayOfMonth) {
+    btn.style.display = 'block';
+    btn.textContent = `🎁 RÉCLAMER ${dailyRewards[dailyClaimed]} POINTS !`;
   } else {
-    name = 'Pionnier_' + Math.random().toString(36).substr(2, 5);
-    toast('✅ Mode démo : ' + name);
+    btn.style.display = 'none';
   }
-  save();
-  updateUI();
-});
-
-function onIncompletePayment(payment) {
-  console.log('💳 Paiement en attente:', payment);
+  document.getElementById('dailyStreakInfo').textContent = 
+    `🔥 Série de ${streak} jours • Prochaine récompense : ${dailyRewards[dailyClaimed] || 'MAX'} pts`;
 }
 
-// ==========================================
-// QUIZ
-// ==========================================
-function startQuiz() {
-  quiz = [...allQuestions].sort(() => Math.random() - 0.5);
-  answers = [null, null, null, null, null];
-  qIndex = 0;
-  showQuestion();
-}
-
-function showQuestion() {
-  const q = quiz[qIndex];
-  document.getElementById('quizProgress').textContent = 'Question ' + (qIndex+1) + '/5';
-  
-  let h = '<p style="font-weight:700; margin-bottom:10px;">' + q.q + '</p>';
-  q.o.forEach((opt, i) => {
-    const sel = answers[qIndex] === i ? ' selected' : '';
-    h += '<button class="option-btn' + sel + '" onclick="pickAnswer(' + i + ')">' + opt + '</button>';
-  });
-  document.getElementById('quizArea').innerHTML = h;
-  
-  document.getElementById('btnPrev').style.display = qIndex > 0 ? 'inline-block' : 'none';
-  document.getElementById('btnNext').style.display = qIndex < 4 ? 'inline-block' : 'none';
-}
-
-function pickAnswer(i) { answers[qIndex] = i; showQuestion(); }
-
-document.getElementById('btnPrev').addEventListener('click', () => {
-  if (qIndex > 0) { qIndex--; showQuestion(); }
-});
-document.getElementById('btnNext').addEventListener('click', () => {
-  if (qIndex < 4) { qIndex++; showQuestion(); }
-});
-document.getElementById('btnSubmitQuiz').addEventListener('click', () => {
-  if (answers.includes(null)) { toast('⚠️ Réponds à tout !'); return; }
-  let correct = 0;
-  quiz.forEach((q, i) => { if (answers[i] === q.c) correct++; });
-  pts += correct * 10;
-  quizDone = true;
-  toast('🎉 ' + correct + '/5 • +' + (correct*10) + ' pts');
-  save();
-  updateUI();
-});
-
-// ==========================================
-// PUB PI ADS (API OFFICIELLE)
-// ==========================================
-async function showPiAd() {
-  console.log('📺 Démarrage pub Pi...');
-  
-  const overlay = document.getElementById('adOverlay');
-  const statusEl = document.getElementById('adStatus');
-  const errorEl = document.getElementById('adError');
-  const spinnerEl = document.getElementById('adSpinner');
-  
-  overlay.classList.add('show');
-  statusEl.textContent = '📺 Chargement de la pub Pi...';
-  statusEl.style.color = '#ffd166';
-  errorEl.style.display = 'none';
-  spinnerEl.style.display = 'block';
-  
-  try {
-    statusEl.textContent = '🔍 Vérification de la pub...';
-    const isAdReadyResponse = await Pi.Ads.isAdReady("interstitial");
-    console.log('isAdReady:', isAdReadyResponse);
-    
-    if (isAdReadyResponse.ready === true) {
-      statusEl.textContent = '📺 Affichage de la pub...';
-      await Pi.Ads.showAd("interstitial");
-      console.log('✅ Pub affichée directement');
-      
-    } else {
-      statusEl.textContent = '📥 Chargement d\'une pub...';
-      const requestAdResponse = await Pi.Ads.requestAd("interstitial");
-      console.log('requestAd:', requestAdResponse);
-      
-      if (requestAdResponse.result !== "AD_LOADED") {
-        throw new Error("Impossible de charger la pub");
-      }
-      
-      statusEl.textContent = '📺 Affichage de la pub...';
-      const showAdResponse = await Pi.Ads.showAd("interstitial");
-      console.log('showAd:', showAdResponse);
-      
-      if (showAdResponse.result !== "AD_CLOSED") {
-        throw new Error("La pub n'a pas pu être affichée");
-      }
-    }
-    
-    statusEl.textContent = '✅ Pub terminée !';
-    statusEl.style.color = '#3ddc84';
-    spinnerEl.style.display = 'none';
-    
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    overlay.classList.remove('show');
-    
-    return true;
-    
-  } catch (error) {
-    console.error('❌ Erreur pub Pi:', error);
-    
-    statusEl.textContent = '⚠️ Pub non disponible (mode démo)';
-    statusEl.style.color = '#ff5d4d';
-    errorEl.textContent = 'La roue va tourner sans pub';
-    errorEl.style.display = 'block';
-    spinnerEl.style.display = 'none';
-    
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    overlay.classList.remove('show');
-    
-    return false;
+document.getElementById('btnClaimDaily').addEventListener('click', () => {
+  if (dailyClaimed < dayOfMonth) {
+    const reward = dailyRewards[dailyClaimed];
+    dailyClaimed++;
+    addPts(reward);
+    toast(`🎁 +${reward} points ! Jour ${dailyClaimed}/30`);
+    renderCalendar();
+    checkAchievements();
   }
-}
-
-// ==========================================
-// ROUE
-// ==========================================
-function drawWheel() {
-  const prizes = [5,10,15,20,25,50,100];
-  const colors = ['#1d3322','#234027','#2c4f30','#3a5c33','#b88f2f','#e8b84b','#ff5d4d'];
-  const weights = [25,25,20,15,10,4,1];
-  const sum = weights.reduce((a,b) => a+b, 0);
-  let acc = 0;
-  let svg = '';
-  
-  weights.forEach((w, i) => {
-    const start = acc;
-    const sweep = (w/sum)*360;
-    acc += sweep;
-    const end = acc;
-    const mid = start + sweep/2;
-    
-    const r1 = (start-90)*Math.PI/180, r2 = (end-90)*Math.PI/180, rm = (mid-90)*Math.PI/180;
-    const x1 = 50+45*Math.cos(r1), y1 = 50+45*Math.sin(r1);
-    const x2 = 50+45*Math.cos(r2), y2 = 50+45*Math.sin(r2);
-    const mx = 50+30*Math.cos(rm), my = 50+30*Math.sin(rm);
-    
-    svg += '<path d="M50,50 L'+x1+','+y1+' A45,45 0 '+(sweep>180?1:0)+' 0 '+x2+','+y2+' Z" fill="'+colors[i]+'" stroke="rgba(255,255,255,0.2)" stroke-width="0.5"/>';
-    svg += '<text x="'+mx+'" y="'+my+'" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="5" font-weight="bold">'+prizes[i]+'</text>';
-  });
-  
-  svg += '<circle cx="50" cy="50" r="8" fill="#1a1208" stroke="#ffd166" stroke-width="1.5"/>';
-  document.getElementById('wheelSvg').innerHTML = svg;
-}
-
-document.getElementById('btnSpin').addEventListener('click', async function() {
-  if (wheelDone) return;
-  
-  await showPiAd();
-  
-  const btn = document.getElementById('btnSpin');
-  btn.disabled = true;
-  btn.textContent = '🎡 La roue tourne...';
-  
-  const svg = document.getElementById('wheelSvg');
-  const rotation = 360*5 + Math.random()*360;
-  svg.style.transform = 'rotate('+rotation+'deg)';
-  
-  setTimeout(() => {
-    const angle = (360 - (rotation%360))%360;
-    const prizes = [5,10,15,20,25,50,100];
-    const weights = [25,25,20,15,10,4,1];
-    const sum = weights.reduce((a,b)=>a+b,0);
-    let acc = 0, prize = 5;
-    weights.forEach((w, i) => {
-      const start = acc;
-      acc += (w/sum)*360;
-      if (angle >= start && angle < acc) prize = prizes[i];
-    });
-    
-    pts += prize;
-    wheelDone = true;
-    btn.textContent = '✅ Déjà tournée';
-    toast('🎉 +'+prize+' points !');
-    save();
-    updateUI();
-  }, 3500);
 });
 
-// ==========================================
-// TIR
-// ==========================================
-function shoot(zone) {
-  if (shootDone) { toast('⚠️ Déjà tiré'); return; }
-  
-  const zones = ['gauche','centre','droite'];
-  const keeper = zones[Math.floor(Math.random()*3)];
-  const el = document.getElementById('shootMsg');
-  
-  if (zone !== keeper) {
-    const p = Math.floor(Math.random()*21)+10;
-    pts += p;
-    el.innerHTML = '⚽ BUT ! +'+p+' pts';
-    el.style.color = '#3ddc84';
-    toast('⚽ +'+p+' points');
-  } else {
-    el.innerHTML = '😞 Arrêté !';
-    el.style.color = '#ff5d4d';
-  }
-  shootDone = true;
+// ========== JACKPOT ==========
+document.getElementById('btnEnterJackpot').addEventListener('click', () => {
+  if (jackpotEntered) { toast('⚠️ Déjà inscrit au jackpot'); return; }
+  jackpotEntered = true;
+  document.getElementById('jackpotStatus').textContent = '✅ Inscrit ! Résultat à minuit';
+  document.getElementById('jackpotStatus').style.color = '#3ddc84';
+  document.getElementById('btnEnterJackpot').disabled = true;
   save();
-  updateUI();
-}
-
-// ==========================================
-// PACK
-// ==========================================
-document.getElementById('btnPack').addEventListener('click', function() {
-  pts += 100;
-  toast('✅ +100 points !');
-  save();
-  updateUI();
 });
 
-// ==========================================
-// INIT
-// ==========================================
-async function init() {
-  console.log('🚀 Foot Quiz Pi');
-  
-  await initPi();
-  
-  if (name) {
-    quizDone = localStorage.getItem('quizDone') === 'true';
-    wheelDone = localStorage.getItem('wheelDone') === 'true';
-    shootDone = localStorage.getItem('shootDone') === 'true';
-  }
-  
-  drawWheel();
-  updateUI();
-  console.log('✅ Prêt !');
+function updateJackpotCountdown() {
+  const now = new Date();
+  const midnight = new Date(now);
+  midnight.setHours(24,0,0,0);
+  const diff = midnight - now;
+  const h = Math.floor(diff/3600000);
+  const m = Math.floor((diff%3600000)/60000);
+  const s = Math.floor((diff%60000)/1000);
+  document.getElementById('jackpotCountdown').textContent = 
+    `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
 }
 
-init();
-</script>
-</body>
-</html>
+// ========== SUCCÈS ==========
+const achievementDefs = [
+  { id: 'first_login', name: '🟢 Bienvenue !', desc: 'Se connecter', pts: 10 },
+  { id: 'first_quiz', name: '🧠 Savant', desc: 'Terminer un quiz', pts: 20 },
+  { id: 'first_wheel', name: '🎡 Chanceux', desc: 'Tourner la roue', pts: 15 },
+  { id: 'first_goal', name: '⚽ Buteur', desc: 'Marquer un but', pts: 15 },
+  { id: 'pts_100', name: '💯 Centenaire', desc: '100 points', pts: 50 },
+  { id: 'pts_500', name: '💰 Riche', desc: '500 points', pts: 100 },
+  { id: 'pts_1000', name: '💎 Millionnaire', desc: '1000 points', pts: 200 },
+  { id: 'streak_7', name: '🔥 Semaine de feu', desc: '7 jours de suite', pts: 150 },
+  { id: 'perfect_quiz', name: '🌟 Parfait', desc: '5/5 au quiz', pts: 100 },
+  { id: 'buy_shop', name: '🛒 Acheteur', desc: 'Acheter à la boutique', pts: 30 }
+];
+
+function checkAchievements() {
+  let updated = false;
+  
+  if (!achievements.first_login && name) { achievements.first_login = true; updated = true; }
+  if (!achievements.first_quiz && quizDone) { achievements.first_quiz = true; updated = true; }
+  if (!achievements.first_wheel && wheelDone) { achievements.first_wheel = true; updated = true; }
+  if (!achievements.first_goal && lastShootScored) { achievements.first_goal = true; updated = true; }
+  if (!achievements.pts_100 && pts
