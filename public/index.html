@@ -1,24 +1,448 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Test Clic</title>
+<title>Foot Quiz Pi</title>
+<script src="https://sdk.minepi.com/pi-sdk.js"></script>
 <style>
-  body { background: #0d2818; color: white; font-family: Arial; text-align: center; padding: 50px; }
-  button { background: #e8b84b; color: black; padding: 20px; font-size: 20px; border: none; border-radius: 10px; cursor: pointer; }
-  #result { margin-top: 20px; font-size: 18px; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0a1a0f;
+    color: white;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    min-height: 100vh;
+    padding: 15px;
+  }
+  button {
+    border: none;
+    border-radius: 12px;
+    padding: 16px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    width: 100%;
+    margin: 5px 0;
+  }
+  button:active { transform: scale(0.97); }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  
+  .btn-yellow { background: #e8b84b; color: #1a1208; }
+  .btn-purple { background: #8c3ce0; color: white; }
+  
+  .card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 16px;
+    padding: 20px;
+    margin: 10px auto;
+    max-width: 400px;
+  }
+  .card h2 { color: #e8b84b; margin-bottom: 10px; font-size: 18px; }
+  .card p { color: #aaa; margin-bottom: 15px; font-size: 14px; }
+  
+  .scoreboard {
+    display: flex;
+    justify-content: space-around;
+    background: rgba(255,255,255,0.05);
+    border-radius: 16px;
+    padding: 15px;
+    max-width: 400px;
+    margin: 0 auto 15px;
+  }
+  .scoreboard div { text-align: center; }
+  .scoreboard .label { font-size: 11px; color: #888; }
+  .scoreboard .value { font-size: 22px; color: #ffd166; font-weight: 700; }
+  
+  .toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #ffd166;
+    color: #1a1208;
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-weight: 700;
+    z-index: 999;
+    display: none;
+  }
+  .toast.show { display: block; }
+  
+  .option-btn {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid #2a4a30;
+    color: white;
+    text-align: left;
+    padding: 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    margin: 4px 0;
+  }
+  .option-btn.selected {
+    border-color: #e8b84b;
+    background: rgba(232,184,75,0.15);
+  }
+  
+  .ad-screen {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.95);
+    z-index: 998;
+    text-align: center;
+    padding-top: 30%;
+  }
+  .ad-screen.show { display: block; }
+  .ad-screen .timer {
+    font-size: 60px;
+    color: #ffd166;
+    font-weight: 700;
+  }
+  .ad-screen .btn-close {
+    display: none;
+    background: #3ddc84;
+    color: #1a1208;
+    padding: 15px 30px;
+    border-radius: 10px;
+    font-size: 18px;
+    margin-top: 20px;
+  }
 </style>
 </head>
 <body>
 
-<h1>TEST DE CLIC</h1>
+<h1 style="text-align:center; color:#ffd166; margin-bottom:5px;">⚽ Foot Quiz Pi</h1>
+<p style="text-align:center; color:#888; margin-bottom:15px; font-size:13px;">Quiz • Roue • Tirs au but</p>
 
-<button onclick="document.getElementById('result').innerHTML = '✅ ÇA MARCHE !'">
-  CLIQUE ICI
-</button>
+<div class="scoreboard">
+  <div>
+    <div class="label">JOUEUR</div>
+    <div class="value" id="nameDisplay">—</div>
+  </div>
+  <div>
+    <div class="label">SÉRIE</div>
+    <div class="value" id="streakDisplay">0</div>
+  </div>
+  <div>
+    <div class="label">POINTS</div>
+    <div class="value" id="ptsDisplay">0</div>
+  </div>
+</div>
 
-<div id="result">Pas encore cliqué</div>
+<!-- LOGIN -->
+<div class="card" id="cardLogin">
+  <h2>🔐 Connexion</h2>
+  <p>Connecte-toi avec Pi Network pour jouer</p>
+  <button class="btn-yellow" id="btnLogin">Se connecter avec Pi</button>
+</div>
 
+<!-- QUIZ -->
+<div class="card" id="cardQuiz" style="display:none;">
+  <h2>🧠 Quiz du jour</h2>
+  <p id="quizProgress">Question 1/5</p>
+  <div id="quizArea"></div>
+  <div style="display:flex; gap:5px;">
+    <button id="btnPrev" style="display:none;">← Précédent</button>
+    <button id="btnNext" style="display:none;">Suivant →</button>
+  </div>
+  <button class="btn-yellow" id="btnSubmitQuiz">Valider</button>
+</div>
+
+<!-- ROUE -->
+<div class="card" id="cardWheel" style="display:none; text-align:center;">
+  <h2>🎡 Roue</h2>
+  <p>Regarde une pub pour tourner</p>
+  <div style="width:180px; height:180px; margin:0 auto 15px; position:relative;">
+    <div style="position:absolute; top:-8px; left:50%; margin-left:-8px; width:0; height:0; border-left:8px solid transparent; border-right:8px solid transparent; border-top:14px solid #ffd166; z-index:2;"></div>
+    <svg id="wheelSvg" width="180" height="180" viewBox="0 0 100 100"></svg>
+  </div>
+  <button class="btn-purple" id="btnSpin">📺 Voir la pub et tourner</button>
+</div>
+
+<!-- TIR -->
+<div class="card" id="cardShoot" style="display:none;">
+  <h2>🥅 Tir au but</h2>
+  <p>Choisis une zone pour tirer</p>
+  <div style="border:3px solid white; border-bottom:none; height:70px; margin:0 auto; max-width:250px; display:flex; align-items:flex-end; justify-content:center; font-size:30px; border-radius:5px 5px 0 0;">⚽</div>
+  <div style="display:flex; gap:5px; margin-top:10px;">
+    <button onclick="shoot('gauche')">⬅️ Gauche</button>
+    <button onclick="shoot('centre')">⬆️ Centre</button>
+    <button onclick="shoot('droite')">➡️ Droite</button>
+  </div>
+  <p id="shootMsg" style="text-align:center; margin-top:10px;"></p>
+</div>
+
+<!-- PACK -->
+<div class="card" id="cardPack" style="display:none;">
+  <h2>📦 Pack Bonus</h2>
+  <p>100 points pour 0.1 Pi</p>
+  <button class="btn-purple" id="btnPack">Acheter 0.1 Pi</button>
+</div>
+
+<!-- ÉCRAN PUB -->
+<div class="ad-screen" id="adScreen">
+  <p style="color:#ffd166; font-size:20px;">📺 Publicité</p>
+  <div class="timer" id="adTimer">5</div>
+  <p style="color:#aaa;">La roue va tourner...</p>
+  <button class="btn-close" id="btnCloseAd">✅ Tourner la roue !</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== DONNÉES =====
+let name = localStorage.getItem('name') || null;
+let pts = parseInt(localStorage.getItem('pts') || '0');
+let streak = parseInt(localStorage.getItem('streak') || '0');
+let quizDone = false;
+let wheelDone = false;
+let shootDone = false;
+let quiz = [];
+let answers = [];
+let qIndex = 0;
+let adTimer = null;
+
+const allQuestions = [
+  { q: "Qui a gagné le Mondial 2022 ?", o: ["France","Brésil","Argentine","Allemagne"], c: 2 },
+  { q: "Joueurs dans une équipe ?", o: ["9","10","11","12"], c: 2 },
+  { q: "Plus de Ligues des Champions ?", o: ["Barça","Real Madrid","Bayern","Liverpool"], c: 1 },
+  { q: "Football codifié où ?", o: ["France","Italie","Brésil","Angleterre"], c: 3 },
+  { q: "Surnom de Messi ?", o: ["CR7","Neymar","La Pulga","Mbappé"], c: 2 }
+];
+
+// Vérifier nouveau jour
+const today = new Date().toDateString();
+if (localStorage.getItem('date') !== today) {
+  quizDone = false; wheelDone = false; shootDone = false;
+  if (name) streak++;
+  localStorage.setItem('date', today);
+}
+
+// ===== FONCTIONS =====
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show';
+  setTimeout(() => t.className = 'toast', 2500);
+}
+
+function save() {
+  localStorage.setItem('name', name || '');
+  localStorage.setItem('pts', pts);
+  localStorage.setItem('streak', streak);
+  localStorage.setItem('quizDone', quizDone);
+  localStorage.setItem('wheelDone', wheelDone);
+  localStorage.setItem('shootDone', shootDone);
+  localStorage.setItem('date', today);
+}
+
+function updateUI() {
+  document.getElementById('nameDisplay').textContent = name || '—';
+  document.getElementById('streakDisplay').textContent = streak;
+  document.getElementById('ptsDisplay').textContent = pts;
+  
+  const ok = !!name;
+  document.getElementById('cardLogin').style.display = ok ? 'none' : 'block';
+  document.getElementById('cardQuiz').style.display = ok ? 'block' : 'none';
+  document.getElementById('cardWheel').style.display = ok ? 'block' : 'none';
+  document.getElementById('cardShoot').style.display = ok ? 'block' : 'none';
+  document.getElementById('cardPack').style.display = ok ? 'block' : 'none';
+  
+  if (ok && !quizDone) startQuiz();
+  if (wheelDone) {
+    document.getElementById('btnSpin').textContent = '✅ Déjà tournée';
+    document.getElementById('btnSpin').disabled = true;
+  }
+}
+
+// ===== LOGIN =====
+document.getElementById('btnLogin').addEventListener('click', function() {
+  name = 'Joueur_' + Math.random().toString(36).substr(2, 5);
+  toast('✅ Connecté : ' + name);
+  save();
+  updateUI();
+});
+
+// ===== QUIZ =====
+function startQuiz() {
+  quiz = [...allQuestions].sort(() => Math.random() - 0.5);
+  answers = [null, null, null, null, null];
+  qIndex = 0;
+  showQuestion();
+}
+
+function showQuestion() {
+  const q = quiz[qIndex];
+  document.getElementById('quizProgress').textContent = 'Question ' + (qIndex+1) + '/5';
+  
+  let h = '<p style="font-weight:700; margin-bottom:10px;">' + q.q + '</p>';
+  q.o.forEach((opt, i) => {
+    const sel = answers[qIndex] === i ? ' selected' : '';
+    h += '<button class="option-btn' + sel + '" onclick="pickAnswer(' + i + ')">' + opt + '</button>';
+  });
+  document.getElementById('quizArea').innerHTML = h;
+  
+  document.getElementById('btnPrev').style.display = qIndex > 0 ? 'inline-block' : 'none';
+  document.getElementById('btnNext').style.display = qIndex < 4 ? 'inline-block' : 'none';
+}
+
+function pickAnswer(i) {
+  answers[qIndex] = i;
+  showQuestion();
+}
+
+document.getElementById('btnPrev').addEventListener('click', function() {
+  if (qIndex > 0) { qIndex--; showQuestion(); }
+});
+
+document.getElementById('btnNext').addEventListener('click', function() {
+  if (qIndex < 4) { qIndex++; showQuestion(); }
+});
+
+document.getElementById('btnSubmitQuiz').addEventListener('click', function() {
+  if (answers.includes(null)) { toast('⚠️ Réponds à tout !'); return; }
+  let correct = 0;
+  quiz.forEach((q, i) => { if (answers[i] === q.c) correct++; });
+  pts += correct * 10;
+  quizDone = true;
+  toast('🎉 ' + correct + '/5 • +' + (correct*10) + ' pts');
+  save();
+  updateUI();
+});
+
+// ===== ROUE + PUB =====
+function drawWheel() {
+  const prizes = [5,10,15,20,25,50,100];
+  const colors = ['#1d3322','#234027','#2c4f30','#3a5c33','#b88f2f','#e8b84b','#ff5d4d'];
+  const weights = [25,25,20,15,10,4,1];
+  const sum = weights.reduce((a,b) => a+b, 0);
+  let acc = 0;
+  let svg = '';
+  
+  weights.forEach((w, i) => {
+    const start = acc;
+    const sweep = (w/sum)*360;
+    acc += sweep;
+    const end = acc;
+    const mid = start + sweep/2;
+    
+    const r1 = (start-90)*Math.PI/180, r2 = (end-90)*Math.PI/180, rm = (mid-90)*Math.PI/180;
+    const x1 = 50+45*Math.cos(r1), y1 = 50+45*Math.sin(r1);
+    const x2 = 50+45*Math.cos(r2), y2 = 50+45*Math.sin(r2);
+    const mx = 50+30*Math.cos(rm), my = 50+30*Math.sin(rm);
+    
+    svg += '<path d="M50,50 L'+x1+','+y1+' A45,45 0 '+(sweep>180?1:0)+' 0 '+x2+','+y2+' Z" fill="'+colors[i]+'" stroke="rgba(255,255,255,0.2)" stroke-width="0.5"/>';
+    svg += '<text x="'+mx+'" y="'+my+'" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="5" font-weight="bold">'+prizes[i]+'</text>';
+  });
+  
+  svg += '<circle cx="50" cy="50" r="8" fill="#1a1208" stroke="#ffd166" stroke-width="1.5"/>';
+  document.getElementById('wheelSvg').innerHTML = svg;
+}
+
+document.getElementById('btnSpin').addEventListener('click', function() {
+  if (wheelDone) return;
+  
+  // Afficher l'écran pub
+  const adScreen = document.getElementById('adScreen');
+  adScreen.classList.add('show');
+  
+  let time = 5;
+  document.getElementById('adTimer').textContent = time;
+  document.getElementById('btnCloseAd').style.display = 'none';
+  
+  adTimer = setInterval(() => {
+    time--;
+    document.getElementById('adTimer').textContent = time;
+    if (time <= 0) {
+      clearInterval(adTimer);
+      document.getElementById('adTimer').textContent = '✓';
+      document.getElementById('btnCloseAd').style.display = 'inline-block';
+    }
+  }, 1000);
+});
+
+document.getElementById('btnCloseAd').addEventListener('click', function() {
+  clearInterval(adTimer);
+  document.getElementById('adScreen').classList.remove('show');
+  
+  // Lancer la roue
+  const btn = document.getElementById('btnSpin');
+  btn.disabled = true;
+  btn.textContent = 'La roue tourne...';
+  
+  const svg = document.getElementById('wheelSvg');
+  const rotation = 360*5 + Math.random()*360;
+  svg.style.transform = 'rotate('+rotation+'deg)';
+  
+  setTimeout(() => {
+    const angle = (360 - (rotation%360))%360;
+    const prizes = [5,10,15,20,25,50,100];
+    const weights = [25,25,20,15,10,4,1];
+    const sum = weights.reduce((a,b)=>a+b,0);
+    let acc = 0, prize = 5;
+    weights.forEach((w, i) => {
+      const start = acc;
+      acc += (w/sum)*360;
+      if (angle >= start && angle < acc) prize = prizes[i];
+    });
+    
+    pts += prize;
+    wheelDone = true;
+    btn.textContent = '✅ Déjà tournée';
+    toast('🎉 +'+prize+' points !');
+    save();
+    updateUI();
+  }, 3500);
+});
+
+// ===== TIR =====
+function shoot(zone) {
+  if (shootDone) { toast('⚠️ Déjà tiré'); return; }
+  
+  const zones = ['gauche','centre','droite'];
+  const keeper = zones[Math.floor(Math.random()*3)];
+  const el = document.getElementById('shootMsg');
+  
+  if (zone !== keeper) {
+    const p = Math.floor(Math.random()*21)+10;
+    pts += p;
+    el.innerHTML = '⚽ BUT ! +'+p+' pts';
+    el.style.color = '#3ddc84';
+    toast('⚽ +'+p+' points');
+  } else {
+    el.innerHTML = '😞 Arrêté !';
+    el.style.color = '#ff5d4d';
+  }
+  shootDone = true;
+  save();
+  updateUI();
+}
+
+// ===== PACK =====
+document.getElementById('btnPack').addEventListener('click', function() {
+  pts += 100;
+  toast('✅ +100 points !');
+  save();
+  updateUI();
+});
+
+// ===== INIT =====
+function init() {
+  console.log('INIT');
+  
+  if (name) {
+    quizDone = localStorage.getItem('quizDone') === 'true';
+    wheelDone = localStorage.getItem('wheelDone') === 'true';
+    shootDone = localStorage.getItem('shootDone') === 'true';
+  }
+  
+  drawWheel();
+  updateUI();
+  console.log('PRÊT');
+}
+
+init();
+</script>
 </body>
 </html>
