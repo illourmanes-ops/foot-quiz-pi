@@ -500,4 +500,350 @@ function buildWheelSegments() {
     return { start, end: acc, mid: start + sweep / 2, prize: WHEEL_PRIZES[i], color: WHEEL_COLORS[i] };
   });
 }
-const wheelSegments = b
+const wheelSegments = buildWheelSegments();
+
+function polarPoint(angleDeg, radius) {
+  const rad = (angleDeg - 90) * Math.PI / 180;
+  return { x: 50 + radius * Math.cos(rad), y: 50 + radius * Math.sin(rad) };
+}
+
+function renderWheel() {
+  const svg = document.getElementById('wheelSvg');
+  const R = 48;
+  let html = `<circle cx="50" cy="50" r="49" fill="#0a1a0e" stroke="#e8b84b" stroke-width="2"/>`;
+  wheelSegments.forEach(seg => {
+    const p1 = polarPoint(seg.start, R);
+    const p2 = polarPoint(seg.end, R);
+    const largeArc = (seg.end - seg.start) > 180 ? 1 : 0;
+    html += `<path d="M50,50 L${p1.x.toFixed(2)},${p1.y.toFixed(2)} A${R},${R} 0 ${largeArc} 1 ${p2.x.toFixed(2)},${p2.y.toFixed(2)} Z" fill="${seg.color}" stroke="#0a1a0e" stroke-width="0.6"/>`;
+    const tp = polarPoint(seg.mid, R * 0.66);
+    html += `<text x="${tp.x.toFixed(2)}" y="${tp.y.toFixed(2)}" fill="${seg.prize >= 50 ? '#1a1208' : '#f3f6f1'}" font-size="7" font-weight="700" font-family="Oswald, sans-serif" text-anchor="middle" dominant-baseline="middle">${seg.prize}</text>`;
+  });
+  svg.innerHTML = html;
+}
+renderWheel();
+
+async function wakeUpServer(maxAttempts = 30) {
+  const btn = document.getElementById('loginBtn');
+  for (let i = 0; i < maxAttempts; i++) {
+    try {
+      const res = await fetch(`${API_BASE}/api/health`);
+      if (res.ok) return true;
+    } catch (e) {}
+    if (btn) btn.textContent = `… (${i * 2}s)`;
+    await new Promise(r => setTimeout(r, 2000));
+  }
+  return false;
+}
+
+document.getElementById('loginBtn').addEventListener('click', async () => {
+  const btn = document.getElementById('loginBtn');
+  const t = translations[currentLang];
+  btn.disabled = true;
+
+  const awake = await wakeUpServer();
+  if (!awake) {
+    showToast("Le serveur ne répond pas, réessaie dans 30 secondes");
+    btn.textContent = t.loginBtn;
+    btn.disabled = false;
+    return;
+  }
+
+  btn.textContent = "…";
+  try {
+    if (typeof Pi === 'undefined') {
+      currentUsername = 'testuser_' + Math.floor(Math.random() * 1000);
+      await onLoginSuccess();
+      return;
+    }
+    const scopes = ['username', 'payments'];
+    const auth = await Pi.authenticate(scopes, onIncompletePaymentFound);
+    currentUsername = auth.user.username;
+
+    await fetch(`${API_BASE}/api/pi/verify`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: currentUsername })
+    });
+
+    await onLoginSuccess();
+  } catch (err) {
+    showToast("Erreur: " + (err && err.message ? err.message : "connexion impossible"));
+    btn.textContent = t.loginBtn;
+    btn.disabled = false;
+  }
+});
+
+document.getElementById('testPaymentBtn').addEventListener('click', () => {
+  const btn = document.getElementById('testPaymentBtn');
+  btn.disabled = true;
+  btn.textContent = "…";
+  try {
+    Pi.createPayment({
+      amount: 0.01, memo: "Test de paiement Foot Quiz Pi", metadata: { type: "test_payment" }
+    }, {
+      onReadyForServerApproval: async (paymentId) => {
+        await fetch(`${API_BASE}/api/pi/approve`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ paymentId })
+        });
+      },
+      onReadyForServerCompletion: async (paymentId, txid) => {
+        await fetch(`${API_BASE}/api/pi/complete`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ paymentId, txid })
+        });
+        showToast("Paiement test réussi !");
+        btn.textContent = "✓";
+      },
+      onCancel: () => { showToast("Paiement annulé"); btn.disabled = false; btn.textContent = translations[currentLang].testPayBtn; },
+      onError: (error) => { showToast("Erreur: " + (error && error.message || "")); btn.disabled = false; btn.textContent = translations[currentLang].testPayBtn; }
+    });
+  } catch (err) {
+    showToast("Erreur: " + (err && err.message || ""));
+    btn.disabled = false; btn.textContent = translations[currentLang].testPayBtn;
+  }
+});
+
+function onIncompletePaymentFound(payment) { console.log("Paiement incomplet trouvé :", payment); }
+
+async function onLoginSuccess() {
+  document.getElementById('loginCard').style.display = 'none';
+  document.getElementById('testPaymentCard').style.display = 'block';
+  document.getElementById('quizCard').style.display = 'block';
+  document.getElementById('wheelCard').style.display = 'block';
+  document.getElementById('shootCard').style.display = 'block';
+  document.getElementById('packCard').style.display = 'block';
+  document.getElementById('shareCard').style.display = 'block';
+  document.getElementById('leaderboardCard').style.display = 'block';
+  document.getElementById('usernameDisplay').textContent = currentUsername;
+  await refreshUserStatus();
+  await loadQuiz();
+  await loadLeaderboard();
+}
+
+async function refreshUserStatus() {
+  try {
+    const res = await fetch(`${API_BASE}/api/user/${currentUsername}`);
+    if (!res.ok) throw new Error('réponse invalide');
+    const data = await res.json();
+    document.getElementById('pointsDisplay').textContent = data.points;
+    document.getElementById('streakDisplay').textContent = data.streak || 0;
+    if (data.quizDoneToday) {
+      document.getElementById('submitQuizBtn').disabled = true;
+      document.getElementById('submitQuizBtn').textContent = translations[currentLang].quizAlreadyDone;
+    }
+    if (data.wheelDoneToday) {
+      document.getElementById('spinBtn').disabled = true;
+      document.getElementById('spinBtn').textContent = translations[currentLang].wheelAlreadyDone;
+    }
+    if (data.shootDoneToday) {
+      document.querySelectorAll('.zone-buttons button').forEach(b => b.disabled = true);
+    }
+  } catch (e) { console.error('refreshUserStatus a échoué', e); }
+}
+
+async function loadQuiz() {
+  try {
+    const res = await fetch(`${API_BASE}/api/quiz/today`);
+    if (!res.ok) throw new Error('réponse invalide');
+    const data = await res.json();
+    currentQuiz = data.questions;
+  } catch (e) {
+    showToast("Impossible de charger le quiz, réessaie");
+    return;
+  }
+  selectedAnswers = new Array(currentQuiz.length).fill(null);
+  currentQuestionIndex = 0;
+  renderCurrentQuestion();
+}
+
+function renderCurrentQuestion() {
+  const container = document.getElementById('quizContainer');
+  const qi = currentQuestionIndex;
+  const q = currentQuiz[qi];
+  const isLast = qi === currentQuiz.length - 1;
+  const t = translations[currentLang];
+  const progressPct = ((qi + 1) / currentQuiz.length) * 100;
+
+  container.innerHTML = `
+    <div class="quiz-progress">${t.questionLabel} ${qi + 1} / ${currentQuiz.length}</div>
+    <div class="quiz-bar"><div class="quiz-bar-fill" style="width:${progressPct}%"></div></div>
+    <div class="question">
+      <p>${q.question}</p>
+      <div class="options">
+        ${q.options.map((opt, oi) => `<div class="option${selectedAnswers[qi] === oi ? ' selected' : ''}" data-o="${oi}">${opt}</div>`).join('')}
+      </div>
+    </div>
+    <div class="quiz-nav">
+      ${qi > 0 ? `<button class="btn-ghost" id="prevQBtn" type="button">${t.prev}</button>` : '<div></div>'}
+      ${isLast ? '' : `<button class="btn-primary" id="nextQBtn" type="button" style="margin-top:0;">${t.next}</button>`}
+    </div>
+  `;
+
+  container.querySelectorAll('.option').forEach(el => {
+    el.addEventListener('click', () => {
+      const oi = parseInt(el.dataset.o);
+      selectedAnswers[qi] = oi;
+      container.querySelectorAll('.option').forEach(o => o.classList.remove('selected'));
+      el.classList.add('selected');
+      if (!isLast) {
+        setTimeout(() => { currentQuestionIndex++; renderCurrentQuestion(); }, 350);
+      }
+    });
+  });
+
+  const prevBtn = document.getElementById('prevQBtn');
+  if (prevBtn) prevBtn.addEventListener('click', () => { currentQuestionIndex--; renderCurrentQuestion(); });
+  const nextBtn = document.getElementById('nextQBtn');
+  if (nextBtn) nextBtn.addEventListener('click', () => { currentQuestionIndex++; renderCurrentQuestion(); });
+
+  document.getElementById('submitQuizBtn').style.display = isLast ? 'block' : 'none';
+}
+
+document.getElementById('submitQuizBtn').addEventListener('click', async () => {
+  const t = translations[currentLang];
+  if (selectedAnswers.includes(null)) { showToast(t.answerAll); return; }
+  const res = await fetch(`${API_BASE}/api/quiz/submit`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: currentUsername, answers: selectedAnswers })
+  });
+  const data = await res.json();
+  if (data.error) { showToast(data.error); return; }
+  showToast(`${data.correct}/${data.total} • +${data.pointsEarned} pts` +
+    (data.streakBonus > 0 ? ` • 🔥+${data.streakBonus}` : ''));
+  document.getElementById('pointsDisplay').textContent = data.totalPoints;
+  document.getElementById('streakDisplay').textContent = data.streak;
+  document.getElementById('submitQuizBtn').disabled = true;
+  document.getElementById('submitQuizBtn').textContent = t.quizAlreadyDone;
+  await loadLeaderboard();
+});
+
+async function showRewardedAd() {
+  try {
+    if (typeof Pi === 'undefined' || !Pi.Ads) {
+      return new Promise(resolve => setTimeout(() => resolve(true), 2000));
+    }
+    const isAdReadyResponse = await Pi.Ads.isAdReady("rewarded");
+    if (isAdReadyResponse.ready === false) {
+      const requestAdResponse = await Pi.Ads.requestAd("rewarded");
+      if (requestAdResponse.result === "ADS_NOT_SUPPORTED") { showToast("Mets à jour Pi Browser"); return false; }
+      if (requestAdResponse.result !== "AD_LOADED") { showToast("Pubs indisponibles, réessaie plus tard"); return false; }
+    }
+    const showAdResponse = await Pi.Ads.showAd("rewarded");
+    if (showAdResponse.result === "AD_REWARDED") {
+      const verifyRes = await fetch(`${API_BASE}/api/ads/verify`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ adId: showAdResponse.adId })
+      });
+      const verifyData = await verifyRes.json();
+      return !!verifyData.verified;
+    }
+    showToast("Pub non terminée");
+    return false;
+  } catch (err) {
+    showToast("Erreur pub: " + (err && err.message || ""));
+    return false;
+  }
+}
+
+document.getElementById('spinBtn').addEventListener('click', async () => {
+  const btn = document.getElementById('spinBtn');
+  const t = translations[currentLang];
+  btn.disabled = true; btn.textContent = "…";
+
+  const adWatched = await showRewardedAd();
+  if (!adWatched) { btn.disabled = false; btn.textContent = t.spinBtn; return; }
+
+  const res = await fetch(`${API_BASE}/api/wheel/spin`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: currentUsername })
+  });
+  const data = await res.json();
+  if (data.error) { showToast(data.error); btn.disabled = false; btn.textContent = t.spinBtn; return; }
+  const seg = wheelSegments[data.prizeIndex];
+  const targetRotation = 6 * 360 + (360 - seg.mid);
+  document.getElementById('wheelSvg').style.transform = `rotate(${targetRotation}deg)`;
+
+  setTimeout(() => {
+    showToast(`+${data.prize} points !`);
+    document.getElementById('pointsDisplay').textContent = data.totalPoints;
+    btn.disabled = true; btn.textContent = t.wheelAlreadyDone;
+    loadLeaderboard();
+  }, 3300);
+});
+
+document.querySelectorAll('.zone-buttons button').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const zone = btn.dataset.zone;
+    document.querySelectorAll('.zone-buttons button').forEach(b => { b.disabled = true; b.classList.remove('chosen'); });
+    btn.classList.add('chosen');
+    const ball = document.getElementById('ballEmoji');
+    const moves = { gauche: 'translateX(-70px) translateY(-50px)', centre: 'translateY(-65px)', droite: 'translateX(70px) translateY(-50px)' };
+    ball.style.transform = moves[zone];
+    try {
+      const res = await fetch(`${API_BASE}/api/minigame/shoot`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: currentUsername, zone })
+      });
+      const data = await res.json();
+      if (data.error) {
+        showToast(data.error);
+        document.querySelectorAll('.zone-buttons button').forEach(b => b.disabled = false);
+        btn.classList.remove('chosen'); ball.style.transform = 'none';
+        return;
+      }
+      setTimeout(() => {
+        showToast(data.goal ? `⚽ GOAL ! +${data.pointsEarned} pts` : `🧤 Arrêté !`);
+        document.getElementById('pointsDisplay').textContent = data.totalPoints;
+        loadLeaderboard();
+      }, 600);
+    } catch (e) {
+      showToast("Erreur, réessaie");
+      document.querySelectorAll('.zone-buttons button').forEach(b => b.disabled = false);
+    }
+  });
+});
+
+document.getElementById('buyPackBtn').addEventListener('click', () => {
+  const btn = document.getElementById('buyPackBtn');
+  if (typeof Pi === 'undefined') { showToast("Utilise Pi Browser"); return; }
+  btn.disabled = true; btn.textContent = "…";
+  try {
+    Pi.createPayment({ amount: 0.1, memo: "Pack Bonus +100 points", metadata: { type: "premium_pack" } }, {
+      onReadyForServerApproval: async (paymentId) => {
+        await fetch(`${API_BASE}/api/pi/approve`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ paymentId }) });
+      },
+      onReadyForServerCompletion: async (paymentId, txid) => {
+        await fetch(`${API_BASE}/api/pi/complete`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ paymentId, txid }) });
+        const packRes = await fetch(`${API_BASE}/api/store/buy-pack`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: currentUsername }) });
+        const packData = await packRes.json();
+        document.getElementById('pointsDisplay').textContent = packData.totalPoints;
+        showToast("+100 points 🎉");
+        btn.textContent = translations[currentLang].packBtn; btn.disabled = false;
+        loadLeaderboard();
+      },
+      onCancel: () => { showToast("Achat annulé"); btn.disabled = false; btn.textContent = translations[currentLang].packBtn; },
+      onError: (error) => { showToast("Erreur: " + (error && error.message || "")); btn.disabled = false; btn.textContent = translations[currentLang].packBtn; }
+    });
+  } catch (err) {
+    showToast("Erreur: " + (err && err.message || "")); btn.disabled = false; btn.textContent = translations[currentLang].packBtn;
+  }
+});
+
+document.getElementById('shareBtn').addEventListener('click', () => {
+  const points = document.getElementById('pointsDisplay').textContent;
+  const text = `⚽ ${points} points sur Foot Quiz Pi ! Viens jouer : https://foot-quiz-pi.onrender.com`;
+  window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+});
+
+async function loadLeaderboard() {
+  try {
+    const res = await fetch(`${API_BASE}/api/leaderboard`);
+    if (!res.ok) throw new Error('réponse invalide');
+    const data = await res.json();
+    const medals = ['🥇', '🥈', '🥉'];
+    const list = document.getElementById('leaderboardList');
+    list.innerHTML = data.map((u, i) =>
+      `<li><span>${medals[i] || (i + 1) + '.'} ${u.username}</span><span>${u.points} pts</span></li>`
+    ).join('') || '<li>—</li>';
+  } catch (e) { console.error('loadLeaderboard a échoué', e); }
+}
+</script>
+
+</body>
+</html>
