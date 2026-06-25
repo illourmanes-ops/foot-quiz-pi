@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Foot Quiz Pi - Premium</title>
     <script src="https://sdk.minepi.com/pi-sdk.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght=500;700&family=Inter:wght@400;700&display=swap" rel="stylesheet">
     <style>
         :root { --pitch: #0d2818; --gold: #e8b84b; --white: #f3f6f1; --red: #ff4d4d; --green: #2ecc71; }
         body { background: #061309; color: var(--white); font-family: 'Inter', sans-serif; margin: 0; padding: 20px; }
@@ -77,14 +77,21 @@
 </main>
 
 <script>
-    const API_BASE = window.location.origin;
+    // FORCE l'adresse de ton API Render pour éviter les conflits dans le Pi Browser
+    const API_BASE = "https://foot-quiz-pi.onrender.com";
     let currentQuiz = [];
     let selectedAnswers = [];
     let userPoints = 0;
     let userTickets = 0;
 
-    if (typeof Pi !== 'undefined') Pi.init({ version: "2.0", sandbox: false });
+    // Authentification réelle Pi Network
+    if (typeof Pi !== 'undefined') {
+        try {
+            Pi.init({ version: "2.0", sandbox: false });
+        } catch(e) { console.log("Erreur init Pi"); }
+    }
 
+    // Gestion des publicités Pi Ads
     document.getElementById('watchAdBtn').addEventListener('click', async () => {
         const btn = document.getElementById('watchAdBtn');
         btn.disabled = true;
@@ -111,16 +118,18 @@
                         alert("🎁 Récompense ajoutée !");
                     }
                 }
-            } catch (err) { alert("Erreur publicitaire."); }
+            } catch (err) { alert("Erreur publicitaire Pi."); }
         } else {
+            // Mode fallback si hors Pi Browser
             userPoints += 50; userTickets += 1; updateDisplays();
             alert("🎮 Mode Test : +50 pts, +1 Ticket !");
         }
         btn.disabled = false; btn.textContent = "🎬 Regarder la Pub Vidéo";
     });
 
+    // Paiements Blockchain Pi
     document.getElementById('buyTicketsBtn').addEventListener('click', async () => {
-        if (typeof Pi === 'undefined') { return alert("Utilise le Pi Browser."); }
+        if (typeof Pi === 'undefined') { return alert("Veuillez utiliser le Pi Browser pour cette action."); }
         try {
             await Pi.createPayment({
                 amount: 0.1,
@@ -143,15 +152,16 @@
                     });
                     return res.json();
                 },
-                onCancel: () => {}, onError: () => { alert("Erreur paiement."); }
+                onCancel: () => { alert("Paiement annulé."); }, 
+                onError: (err) => { alert("Erreur lors de la transaction."); }
             });
             userTickets += 5; updateDisplays();
             alert("🎉 Pack activé !");
-        } catch (err) { alert("Erreur d'initialisation."); }
+        } catch (err) { alert("Impossible d'ouvrir la fenêtre de paiement Pi."); }
     });
 
     window.placeBet = (pred) => {
-        if (userTickets < 1) return alert("Il te faut un ticket !");
+        if (userTickets < 1) return alert("Il te faut un ticket ! Regarde une pub.");
         userTickets--; updateDisplays();
         alert(`⚽ Pari enregistré : ${pred} !`);
     };
@@ -162,7 +172,7 @@
             currentQuiz = await res.json();
             selectedAnswers = new Array(currentQuiz.length).fill(null);
             renderQuiz();
-        } catch (e) { document.getElementById('quizContainer').innerHTML = "Erreur réseau."; }
+        } catch (e) { document.getElementById('quizContainer').innerHTML = "Erreur de connexion avec le serveur du quiz."; }
     }
 
     function renderQuiz() {
@@ -201,7 +211,7 @@
             userPoints += data.pointsEarned; updateDisplays();
             alert(`Score : ${data.correctCount}/5 !`);
             loadQuiz();
-        } catch(e) { alert("Erreur."); }
+        } catch(e) { alert("Erreur lors de la validation."); }
     });
 </script>
 </body>
