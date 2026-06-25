@@ -614,4 +614,19 @@ async function init() {
   
   // Restaurer état
   if (currentUser) {
- 
+    quizDone = localStorage.getItem('fqp_quiz_done') === 'true';
+    wheelDone = localStorage.getItem('fqp_wheel_done') === 'true';
+    shootDone = localStorage.getItem('fqp_shoot_done') === 'true';
+  }
+  
+  drawWheel();
+  updateUI();
+  
+  console.log('✅ Prêt ! Pi:', piReady ? 'OK' : 'Mode démo');
+  console.log('📺 Pub intégrée - Clique sur la roue pour tester');
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
